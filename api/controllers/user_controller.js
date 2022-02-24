@@ -15,6 +15,7 @@ exports.signup = async (req, res) => {
     //console.log(email);
     const { firstname } = req.body;
     const {lastname} = req.body;
+    const{password} = req.body;
     //console.log(firstname);
     //console.log(lastname);
     // Check we have an email
@@ -34,7 +35,8 @@ exports.signup = async (req, res) => {
           _id: new mongoose.Types.ObjectId,
           email: email,
           firstname:  firstname, 
-          lastname: lastname
+          lastname: lastname,
+          password: password
 
       }).save();
       // Step 2 - Generate a verification token with the user's ID
@@ -59,6 +61,8 @@ exports.update = async (req, res) => {
     const { email } = req.body;
     const { firstname } = req.body;
     const {lastname} = req.body;
+    const {password} = req.body;
+    const{newpassword} = req.body;
     // Check we have an email
     if (!email) {
         return res.status(422).send({ 
@@ -80,14 +84,27 @@ exports.update = async (req, res) => {
              });
         }
         else{
-            
+         user.comparePassword(req.body.password, function(err, isMatch) {
+            if (err) throw err;
+            console.log('Password Matched', isMatch);
+            if(isMatch){
             user.firstname = firstname;
             user.lastname = lastname;
+            user.password = newpassword;
             console.log(user);
             user.save();
             return res.status(200).send({
                 message: "Updated!!"
            });
+         }
+            else{
+               return res.status(403).send({ 
+                  message: "Wrong Password" 
+            });
+            }
+            
+        });
+            
         }
         
      } catch(err) {
@@ -152,9 +169,22 @@ exports.login= async (req, res) => {
                    message: "Verify your Account." 
              });
         }
-        return res.status(200).send({
-             message: "User logged in"
-        });
+        user.comparePassword(req.body.password, function(err, isMatch) {
+         if (err) throw err;
+         console.log('Password Matched', isMatch);
+         if(isMatch){
+                
+            return res.status(200).send({
+               message: "User logged in"
+            });
+         }
+         else{
+            return res.status(403).send({ 
+               message: "Wrong Password" 
+         });
+         }
+         
+     });
      } catch(err) {
         return res.status(500).send(err);
      }
