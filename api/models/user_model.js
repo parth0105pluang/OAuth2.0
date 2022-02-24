@@ -7,12 +7,15 @@ const UserSchema = mongoose.Schema({
     email: String,
     firstname:  String, 
     lastname: String,
-    password: { type: String, required: true },
+    password: { type: String, 
+        required: true 
+    },
     verified: {
         type: Boolean,
         required: true,
         default: false
     }
+
 });
 UserSchema.pre('save', function(next) {
     var user = this;
@@ -24,7 +27,7 @@ UserSchema.pre('save', function(next) {
     bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt) {
         if (err) return next(err);
 
-        // hash the password using our new salt
+    
         bcrypt.hash(user.password, salt, function(err, hash) {
             if (err) return next(err);
             // override the cleartext password with the hashed one

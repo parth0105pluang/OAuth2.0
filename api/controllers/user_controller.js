@@ -1,4 +1,17 @@
 const mongoose = require('mongoose');
+//const CryptoJS = require("crypto-js");
+global.Buffer = global.Buffer || require('buffer').Buffer;
+if (typeof btoa === 'undefined') {
+  global.btoa = function (str) {
+    return new Buffer(str, 'binary').toString('base64');
+  };
+}
+if (typeof atob === 'undefined') {
+  global.atob = function (b64Encoded) {
+    return new Buffer(b64Encoded, 'base64').toString('binary');
+  };
+}
+
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user_model.js');
@@ -9,6 +22,13 @@ const transporter = nodemailer.createTransport({
        pass: process.env.EMAIL_PASSWORD,
     },
 });
+//var key = "2e35f242a46d67eeb74aabc37d5e5d05";
+/*
+var key = "2e35f242a46d67eeb74aabc37d5e5d05";
+var data = CryptoJS.AES.encrypt("Message", key); // Encryption Part
+var decrypted = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8); // Message
+
+*/
 exports.signup = async (req, res) => {
     const { email } = req.body;
     //console.log(req.body);
@@ -61,8 +81,10 @@ exports.update = async (req, res) => {
     const { email } = req.body;
     const { firstname } = req.body;
     const {lastname} = req.body;
-    const {password} = req.body;
-    const{newpassword} = req.body;
+    if(req.body.newpassword){
+      const{newpassword} = req.body;
+    }
+   
     // Check we have an email
     if (!email) {
         return res.status(422).send({ 
@@ -90,7 +112,10 @@ exports.update = async (req, res) => {
             if(isMatch){
             user.firstname = firstname;
             user.lastname = lastname;
-            user.password = newpassword;
+            if(req.body.newpassword){
+               user.password = req.body.newpassword;
+            }
+      
             console.log(user);
             user.save();
             return res.status(200).send({
@@ -112,6 +137,7 @@ exports.update = async (req, res) => {
      }
 }
 exports.verify = async (req, res) => {
+    console.log("called");
     const { token } = req.params
     // Check we have an id
     if (!token) {
@@ -188,4 +214,69 @@ exports.login= async (req, res) => {
      } catch(err) {
         return res.status(500).send(err);
      }
+}
+exports.forgotpassword= async (req, res) => {
+      const { email } = req.body;
+      const user = await User.findOne({ email }).exec();
+      const verificationToken = user.generateVerificationToken();
+      const encodedData = btoa(req.body.newpassword.toString());
+      const Password = encodedData;
+      //console.log(verificationToken);
+      // Step 3 - Email the user a unique verification link
+      const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}`;
+      console.log(url);
+      transporter.sendMail({
+         to: email,
+         subject: 'Password Reset',
+         html: `Click <a href = '${url}'>here</a> to confirm your email for password reset.`
+      })
+      return res.status(201).send({
+         message: `Sent a verification email to ${email}`
+      });
+}
+
+exports.reset = async (req, res) => {
+   console.log("reset called");
+   const { token } = req.params
+   // Check we have an id
+   if (!token) {
+       return res.status(422).send({ 
+            message: "Missing Token" 
+       });
+   }
+   // Step 1 -  Verify the token from the URL
+   let payload = null
+   try {
+       payload = jwt.verify(
+          token,
+          process.env.USER_VERIFICATION_TOKEN_SECRET
+       );
+   } catch (err) {
+       return res.status(500).send(err);
+   }
+   try{
+       // Step 2 - Find user with matching ID
+       const user = await User.findOne({ _id: payload.ID }).exec();
+       if (!user) {
+          return res.status(404).send({ 
+             message: "User does not  exists" 
+          });
+       }
+       // Step 3 - Update user verification status to true
+       //console.log(req.params.Password);
+       try{
+         //var decrypted = CryptoJS.AES.decrypt(req.params.Password, key).toString(CryptoJS.enc.Utf8);
+         const decodedData = atob(req.params.Password); 
+         user.password = decodedData;
+       }catch(err){
+          console.log(error);
+       }
+       
+       await user.save();
+       return res.status(200).send({
+             message: "Password Changed"
+       });
+    } catch (err) {
+       return res.status(500).send(err);
+    }
 }
