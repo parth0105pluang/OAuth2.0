@@ -10,6 +10,7 @@ const UserSchema = mongoose.Schema({
     password: { type: String, 
         required: true 
     },
+    mobile:{type:String},
     verified: {
         type: Boolean,
         required: true,

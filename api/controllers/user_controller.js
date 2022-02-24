@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 //const CryptoJS = require("crypto-js");
+const fast2sms = require('fast-two-sms') ;
 global.Buffer = global.Buffer || require('buffer').Buffer;
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -29,7 +30,7 @@ var data = CryptoJS.AES.encrypt("Message", key); // Encryption Part
 var decrypted = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8); // Message
 
 */
-exports.signup = async (req, res) => {
+exports.signupMail = async (req, res) => {
     const { email } = req.body;
     //console.log(req.body);
     //console.log(email);
@@ -280,3 +281,74 @@ exports.reset = async (req, res) => {
        return res.status(500).send(err);
     }
 }
+
+
+exports.signupMobile = async (req, res) => {
+   const { mobile } = req.body;
+   console.log({mobile});
+   //console.log(req.body);
+   //console.log(email);
+   const { firstname } = req.body;
+   const {lastname} = req.body;
+   const{password} = req.body;
+   //console.log(firstname);
+   //console.log(lastname);
+   // Check we have an mno.
+   if (!mobile) {
+      return res.status(422).send({ message: "Missing number." });
+   }
+   try{
+      // Check if the email is in use
+      const existingUser = await User.findOne({ mobile }).exec();
+      console.log(existingUser);
+      if (existingUser) {
+         return res.status(409).send({ 
+               message: "Number is already in use."
+         });
+      }
+      // Step 1 - Create and save the user
+     const user = await new User({
+         _id: new mongoose.Types.ObjectId,
+         mobile: mobile,
+         firstname:  firstname, 
+         lastname: lastname,
+         password: password
+
+     }).save();
+     // Step 2 - Generate a verification token with the user's ID
+     const verificationToken = user.generateVerificationToken();
+     //console.log(verificationToken);
+     // Step 3 - Email the user a unique verification link
+     const url = `http://localhost:3000/api/verify/${verificationToken}`;
+     console.log(url);
+     var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : url,  numbers : [mobile]} ;
+    fast2sms.sendMessage(options).then(response=>{
+      res.status(201).send(response);
+    })
+
+  } catch(err){
+     return res.status(500).send(err);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
