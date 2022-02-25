@@ -80,7 +80,7 @@ exports.signupMail = async (req, res) => {
       return res.status(500).send(err);
    }
 }
-exports.update = async (req, res) => {
+exports.updateMail = async (req, res) => {
     const { email } = req.body;
     const { firstname } = req.body;
     const {lastname} = req.body;
@@ -478,7 +478,119 @@ exports.forgotpasswordMobile= async (req, res) => {
       message: `Sent a verification sms to ${mobile}`
    });
 }
-
-
-
-
+exports.updateMobile = async (req, res) => {
+   const { email } = req.body;
+   const { firstname } = req.body;
+   const {lastname} = req.body;
+   const{mobile} = req.body;
+   if(req.body.newpassword){
+     const{newpassword} = req.body;
+   }
+  
+   // Check we have an email
+   if (!mobile) {
+       return res.status(422).send({ 
+            message: "Missing email." 
+       });
+   }
+   try{
+       // Step 1 - Verify a user with the email exists
+       const user = await User.findOne({ mobile }).exec();
+       if (!user) {
+            return res.status(404).send({ 
+                  message: "User does not exists" 
+            });
+       }
+       // Step 2 - Ensure the account has been verified
+       if(!user.mobile_verified){
+            return res.status(403).send({ 
+                  message: "Verify your Account." 
+            });
+       }
+       else{
+        user.comparePassword(req.body.password, function(err, isMatch) {
+           if (err) throw err;
+           console.log('Password Matched', isMatch);
+           if(isMatch){
+           //console.log(req);
+           if(req.body.firstname){
+            user.firstname = firstname;
+           }
+           if(req.body.lastname){
+            user.lastname = lastname;
+           }
+           if(req.body.email){
+            user.email = email;
+           }
+           if(req.body.newpassword){
+              user.password = req.body.newpassword;
+           }
+     
+           console.log(user);
+           user.save(function(){
+              console.log("Saved");
+           });
+           return res.status(200).send({
+               message: "Updated!!"
+          });
+        }
+           else{
+              return res.status(403).send({ 
+                 message: "Wrong Password" 
+           });
+           }
+           
+       });
+           
+       }
+       
+    } catch(err) {
+       return res.status(500).send(err);
+    }
+}
+exports.logIn =async function (req, res, next) {
+      const { mobile } = req.body;
+      // Check we have an email
+      if (!mobile) {
+          return res.status(422).send({ 
+               message: "Missing mobile number." 
+          });
+      }
+      try{
+          // Step 1 - Verify a user with the email exists
+          const user = await User.findOne({ mobile }).exec();
+          if (!user) {
+               return res.status(404).send({ 
+                     message: "User does not exists" 
+               });
+          }
+          // Step 2 - Ensure the account has been verified
+          if(!user.mobile_verified){
+               return res.status(403).send({ 
+                     message: "Verify your Account." 
+               });
+          }
+          user.comparePassword(req.body.password, function(err, isMatch) {
+           if (err) throw err;
+           console.log('Password Matched', isMatch);
+           if(isMatch){
+              next()   
+           }
+           else{
+              return res.status(403).send({ 
+                 message: "Wrong Password" 
+           });
+           }
+           
+       });
+       } catch(err) {
+          return res.status(500).send(err);
+       }
+ }
+exports.dispData = async(req,res)=>{
+   const { mobile } = req.body;
+   const user = await User.findOne({ mobile }).exec();
+   return res.status(200).send({
+      user
+   });
+}
