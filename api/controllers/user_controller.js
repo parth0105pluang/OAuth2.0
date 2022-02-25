@@ -187,6 +187,7 @@ exports.verify = async (req, res) => {
 exports.loginMail = async (req, res) => {
     const { email } = req.body;
     // Check we have an email
+    console.log({ email });
     if (!email) {
         return res.status(422).send({ 
              message: "Missing email." 
@@ -226,7 +227,7 @@ exports.loginMail = async (req, res) => {
         return res.status(500).send(err);
      }
 }
-exports.forgotpassword= async (req, res) => {
+exports.forgotpasswordMail= async (req, res) => {
       const { email } = req.body;
       const user = await User.findOne({ email }).exec();
       const verificationToken = user.generateVerificationToken();
@@ -418,18 +419,65 @@ exports.getotp = async(req,res)=>{
           return res.status(500).send(err);
        }
 }  
+exports.loginotp = async(req,res)=>{
+   const { mobile } = req.body;
+   const {otp} = req.body;
+   // Check we have an email
+   if (!mobile) {
+       return res.status(422).send({ 
+            message: "Missing mobile number." 
+       });
+   }
+   try{
+       // Step 1 - Verify a user with the email exists
+       const user = await User.findOne({ mobile }).exec();
+       if (!user) {
+            return res.status(404).send({ 
+                  message: "User does not exists" 
+            });
+       }
+       // Step 2 - Ensure the account has been verified
+       if(!user.mobile_verified){
+            return res.status(403).send({ 
+                  message: "Verify your Account." 
+            });
+       }
+       if(user.otp!=otp){ 
+            return res.status(401).send({ 
+               message: "Wrong OTP" 
+           });
+       }
+       if(user.otp==otp){
+             console.log("LOGGED IN");
+             return res.status(200).send({ 
+               message: "Logged In" 
+           });
+       }
+     } catch(err) {
+       return res.status(500).send(err);
+    }
 
+}
+exports.forgotpasswordMobile= async (req, res) => {
 
-
-
-
-
-
-
-
-
-
-
+   const { mobile } = req.body;
+   const user = await User.findOne({ mobile }).exec();
+   const verificationToken = user.generateVerificationToken();
+   const encodedData = btoa(req.body.newpassword.toString());
+   const Password = encodedData;
+   //console.log(verificationToken);
+   // Step 3 - Email the user a unique verification link
+   const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}`;
+   console.log(url);
+   var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : "your reset link: "+url,  numbers : [mobile]} ;
+   fast2sms.sendMessage(options).then(response=>{
+      //res.status(201).send(response);
+      console.log(response);
+   })
+   return res.status(201).send({
+      message: `Sent a verification sms to ${mobile}`
+   });
+}
 
 
 
