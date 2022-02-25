@@ -11,10 +11,18 @@ const UserSchema = mongoose.Schema({
         required: true 
     },
     mobile:{type:String},
-    verified: {
+    mail_verified: {
         type: Boolean,
         required: true,
         default: false
+    },
+    mobile_verified: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    otp:{
+           type:String
     }
 
 });

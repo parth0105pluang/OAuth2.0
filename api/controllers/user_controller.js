@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const otpGenerator = require('otp-generator');
 //const CryptoJS = require("crypto-js");
 const fast2sms = require('fast-two-sms') ;
 global.Buffer = global.Buffer || require('buffer').Buffer;
@@ -62,9 +63,10 @@ exports.signupMail = async (req, res) => {
       }).save();
       // Step 2 - Generate a verification token with the user's ID
       const verificationToken = user.generateVerificationToken();
+      const verification_type = "mail"
       //console.log(verificationToken);
       // Step 3 - Email the user a unique verification link
-      const url = `http://localhost:3000/api/verify/${verificationToken}`;
+      const url = `http://localhost:3000/api/verify/${verificationToken}/${verification_type}`;
       console.log(url);
       transporter.sendMail({
          to: email,
@@ -82,6 +84,7 @@ exports.update = async (req, res) => {
     const { email } = req.body;
     const { firstname } = req.body;
     const {lastname} = req.body;
+    const{mobile} = req.body;
     if(req.body.newpassword){
       const{newpassword} = req.body;
     }
@@ -101,7 +104,7 @@ exports.update = async (req, res) => {
              });
         }
         // Step 2 - Ensure the account has been verified
-        if(!user.verified){
+        if(!user.mail_verified){
              return res.status(403).send({ 
                    message: "Verify your Account." 
              });
@@ -113,6 +116,7 @@ exports.update = async (req, res) => {
             if(isMatch){
             user.firstname = firstname;
             user.lastname = lastname;
+            user.mobile = mobile;
             if(req.body.newpassword){
                user.password = req.body.newpassword;
             }
@@ -139,7 +143,8 @@ exports.update = async (req, res) => {
 }
 exports.verify = async (req, res) => {
     console.log("called");
-    const { token } = req.params
+    const { token } = req.params;
+    const { user_varification_type } = req.params;
     // Check we have an id
     if (!token) {
         return res.status(422).send({ 
@@ -165,7 +170,12 @@ exports.verify = async (req, res) => {
            });
         }
         // Step 3 - Update user verification status to true
-        user.verified = true;
+        if(user_varification_type=="mobile"){
+             user.mobile_verified = true;
+        }
+        else if(user_varification_type=="mail"){
+             user.mail_verified = true;
+        }
         await user.save();
         return res.status(200).send({
               message: "Account Verified"
@@ -174,7 +184,7 @@ exports.verify = async (req, res) => {
         return res.status(500).send(err);
      }
 }
-exports.login= async (req, res) => {
+exports.loginMail = async (req, res) => {
     const { email } = req.body;
     // Check we have an email
     if (!email) {
@@ -191,7 +201,7 @@ exports.login= async (req, res) => {
              });
         }
         // Step 2 - Ensure the account has been verified
-        if(!user.verified){
+        if(!user.mail_verified){
              return res.status(403).send({ 
                    message: "Verify your Account." 
              });
@@ -285,6 +295,7 @@ exports.reset = async (req, res) => {
 
 exports.signupMobile = async (req, res) => {
    const { mobile } = req.body;
+   const {email} = req.body;
    console.log({mobile});
    //console.log(req.body);
    //console.log(email);
@@ -299,7 +310,7 @@ exports.signupMobile = async (req, res) => {
    }
    try{
       // Check if the email is in use
-      const existingUser = await User.findOne({ mobile }).exec();
+      const existingUser = await (User.findOne({ mobile }).exec());
       console.log(existingUser);
       if (existingUser) {
          return res.status(409).send({ 
@@ -317,9 +328,10 @@ exports.signupMobile = async (req, res) => {
      }).save();
      // Step 2 - Generate a verification token with the user's ID
      const verificationToken = user.generateVerificationToken();
+     const verification_type= "mobile"
      //console.log(verificationToken);
      // Step 3 - Email the user a unique verification link
-     const url = `http://localhost:3000/api/verify/${verificationToken}`;
+     const url = `http://localhost:3000/api/verify/${verificationToken}/${verification_type}`;
      console.log(url);
      var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : url,  numbers : [mobile]} ;
     fast2sms.sendMessage(options).then(response=>{
@@ -330,12 +342,82 @@ exports.signupMobile = async (req, res) => {
      return res.status(500).send(err);
   }
 }
-
-
-
-
-
-
+exports.loginMobile = async (req, res) => {
+   const { mobile } = req.body;
+   // Check we have an email
+   if (!mobile) {
+       return res.status(422).send({ 
+            message: "Missing mobile number." 
+       });
+   }
+   try{
+       // Step 1 - Verify a user with the email exists
+       const user = await User.findOne({ mobile }).exec();
+       if (!user) {
+            return res.status(404).send({ 
+                  message: "User does not exists" 
+            });
+       }
+       // Step 2 - Ensure the account has been verified
+       if(!user.mobile_verified){
+            return res.status(403).send({ 
+                  message: "Verify your Account." 
+            });
+       }
+       user.comparePassword(req.body.password, function(err, isMatch) {
+        if (err) throw err;
+        console.log('Password Matched', isMatch);
+        if(isMatch){
+               
+           return res.status(200).send({
+              message: "User logged in"
+           });
+        }
+        else{
+           return res.status(403).send({ 
+              message: "Wrong Password" 
+        });
+        }
+        
+    });
+    } catch(err) {
+       return res.status(500).send(err);
+    }
+}
+exports.getotp = async(req,res)=>{
+   
+      const { mobile } = req.body;
+      // Check we have an email
+      if (!mobile) {
+          return res.status(422).send({ 
+               message: "Missing mobile number." 
+          });
+      }
+      try{
+          // Step 1 - Verify a user with the email exists
+          const user = await User.findOne({ mobile }).exec();
+          if (!user) {
+               return res.status(404).send({ 
+                     message: "User does not exists" 
+               });
+          }
+          // Step 2 - Ensure the account has been verified
+          if(!user.mobile_verified){
+               return res.status(403).send({ 
+                     message: "Verify your Account." 
+               });
+          }
+          const otp = otpGenerator.generate(8, { alphabets: false, upperCase: false, specialChars: false,lowerCaseAlphabets: false });
+          var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : "your otp: "+otp,  numbers : [mobile]} ;
+          fast2sms.sendMessage(options).then(response=>{
+          res.status(201).send(response);
+          })
+          user.otp=otp;
+          user.save();
+        } catch(err) {
+          return res.status(500).send(err);
+       }
+}  
 
 
 

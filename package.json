@@ -26,6 +26,7 @@
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.2.3",
     "nodemailer": "^6.7.2",
+    "otp-generator": "^4.0.0",
     "redis": "^4.0.4"
   }
 }
