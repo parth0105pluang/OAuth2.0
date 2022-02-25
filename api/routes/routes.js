@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/user_controller.js');
 var key = "2e35f242a46d67eeb74aabc37d5e5d05";
-router.get('/data',UserController.logIn,UserController.dispData);
+router.get('/data',UserController.logInMobile,UserController.dispData);
 router.post('/signup/mail', UserController.signupMail);
 router.post('/signup/mobile', UserController.signupMobile);
 //router.post('/login/:verification_method', UserController.login);

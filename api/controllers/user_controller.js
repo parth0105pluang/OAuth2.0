@@ -548,7 +548,7 @@ exports.updateMobile = async (req, res) => {
        return res.status(500).send(err);
     }
 }
-exports.logIn =async function (req, res, next) {
+exports.logInMobile =async (req, res, next) =>{
       const { mobile } = req.body;
       // Check we have an email
       if (!mobile) {
