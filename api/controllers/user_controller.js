@@ -80,67 +80,6 @@ exports.signupMail = async (req, res) => {
       return res.status(500).send(err);
    }
 }
-exports.updateMail = async (req, res) => {
-    const { email } = req.body;
-    const { firstname } = req.body;
-    const {lastname} = req.body;
-    const{mobile} = req.body;
-    if(req.body.newpassword){
-      const{newpassword} = req.body;
-    }
-   
-    // Check we have an email
-    if (!email) {
-        return res.status(422).send({ 
-             message: "Missing email." 
-        });
-    }
-    try{
-        // Step 1 - Verify a user with the email exists
-        const user = await User.findOne({ email }).exec();
-        if (!user) {
-             return res.status(404).send({ 
-                   message: "User does not exists" 
-             });
-        }
-        // Step 2 - Ensure the account has been verified
-        if(!user.mail_verified){
-             return res.status(403).send({ 
-                   message: "Verify your Account." 
-             });
-        }
-        else{
-         user.comparePassword(req.body.password, function(err, isMatch) {
-            if (err) throw err;
-            console.log('Password Matched', isMatch);
-            if(isMatch){
-            user.firstname = firstname;
-            user.lastname = lastname;
-            user.mobile = mobile;
-            if(req.body.newpassword){
-               user.password = req.body.newpassword;
-            }
-      
-            console.log(user);
-            user.save();
-            return res.status(200).send({
-                message: "Updated!!"
-           });
-         }
-            else{
-               return res.status(403).send({ 
-                  message: "Wrong Password" 
-            });
-            }
-            
-        });
-            
-        }
-        
-     } catch(err) {
-        return res.status(500).send(err);
-     }
-}
 exports.verify = async (req, res) => {
     console.log("called");
     const { token } = req.params;
@@ -478,94 +417,82 @@ exports.forgotpasswordMobile= async (req, res) => {
       message: `Sent a verification sms to ${mobile}`
    });
 }
-exports.updateMobile = async (req, res) => {
+exports.update = async (req, res) => {
+   const login_method = req.params.login_method;
+   incoming_user = {};
+   incoming_user[login_method] = req.body[login_method];
+   const user = await User.findOne(incoming_user).exec();
    const { email } = req.body;
    const { firstname } = req.body;
    const {lastname} = req.body;
    const{mobile} = req.body;
-   if(req.body.newpassword){
-     const{newpassword} = req.body;
+   if(login_method=="mobile"){
+         if(req.body.firstname){
+         user.firstname = firstname;
+         }
+         if(req.body.lastname){
+         user.lastname = lastname;
+         }
+         if(req.body.email){
+         user.email = email;
+         }
+         if(req.body.newpassword){
+         user.password = req.body.newpassword;
+         }
    }
-  
-   // Check we have an email
-   if (!mobile) {
-       return res.status(422).send({ 
-            message: "Missing email." 
-       });
+   if(login_method=="email"){
+      if(req.body.firstname){
+      user.firstname = firstname;
+      }
+      if(req.body.lastname){
+      user.lastname = lastname;
+      }
+      if(req.body.mobile){
+      user.mobile = mobile;
+      }
+      if(req.body.newpassword){
+      user.password = req.body.newpassword;
+      }
+      
    }
-   try{
-       // Step 1 - Verify a user with the email exists
-       const user = await User.findOne({ mobile }).exec();
-       if (!user) {
-            return res.status(404).send({ 
-                  message: "User does not exists" 
-            });
-       }
-       // Step 2 - Ensure the account has been verified
-       if(!user.mobile_verified){
-            return res.status(403).send({ 
-                  message: "Verify your Account." 
-            });
-       }
-       else{
-        user.comparePassword(req.body.password, function(err, isMatch) {
-           if (err) throw err;
-           console.log('Password Matched', isMatch);
-           if(isMatch){
-           //console.log(req);
-           if(req.body.firstname){
-            user.firstname = firstname;
-           }
-           if(req.body.lastname){
-            user.lastname = lastname;
-           }
-           if(req.body.email){
-            user.email = email;
-           }
-           if(req.body.newpassword){
-              user.password = req.body.newpassword;
-           }
-     
-           console.log(user);
-           user.save(function(){
-              console.log("Saved");
-           });
-           return res.status(200).send({
-               message: "Updated!!"
-          });
-        }
-           else{
-              return res.status(403).send({ 
-                 message: "Wrong Password" 
-           });
-           }
-           
-       });
-           
-       }
-       
-    } catch(err) {
-       return res.status(500).send(err);
-    }
+   console.log(user);
+   user.save(function(){
+   console.log("Saved");
+   });
+   return res.status(200).send({
+   message: "Updated!!"
+   });
+        
 }
-exports.logInMobile =async (req, res, next) =>{
-      const { mobile } = req.body;
-      // Check we have an email
-      if (!mobile) {
+exports.logInMiddwre =async (req, res, next) =>{
+      //const { mobile } = req.body;
+      const login_method = req.params.login_method;
+      incoming_user = {};
+      incoming_user[login_method] = req.body[login_method];
+      // Check we have an valid login method
+      if (!incoming_user[login_method]) {
           return res.status(422).send({ 
-               message: "Missing mobile number." 
+               message: `Missing ${login_method}.` 
           });
       }
       try{
-          // Step 1 - Verify a user with the email exists
-          const user = await User.findOne({ mobile }).exec();
+          
+          const user = await User.findOne(incoming_user).exec();
           if (!user) {
                return res.status(404).send({ 
                      message: "User does not exists" 
                });
           }
           // Step 2 - Ensure the account has been verified
-          if(!user.mobile_verified){
+          if(login_method=="mobile" && !user.mobile_verified){
+            
+               return res.status(403).send({ 
+                     message: "Verify your Account." 
+               });
+          
+          }
+          if(login_method=="email" && !user.mail_verified){
+            
                return res.status(403).send({ 
                      message: "Verify your Account." 
                });
@@ -586,10 +513,12 @@ exports.logInMobile =async (req, res, next) =>{
        } catch(err) {
           return res.status(500).send(err);
        }
- }
+}
 exports.dispData = async(req,res)=>{
-   const { mobile } = req.body;
-   const user = await User.findOne({ mobile }).exec();
+   const login_method = req.params.login_method;
+   incoming_user = {};
+   incoming_user[login_method] = req.body[login_method];
+   const user = await User.findOne(incoming_user).exec();
    return res.status(200).send({
       user
    });
