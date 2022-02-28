@@ -166,9 +166,11 @@ exports.loginMail = async (req, res) => {
         return res.status(500).send(err);
      }
 }
-exports.forgotpasswordMail= async (req, res) => {
-      const { email } = req.body;
-      const user = await User.findOne({ email }).exec();
+exports.forgotpassword= async (req, res) => {
+      const login_method = req.params.login_method;
+      incoming_user = {};
+      incoming_user[login_method] = req.body[login_method];
+      const user = await User.findOne(incoming_user).exec();
       const verificationToken = user.generateVerificationToken();
       const encodedData = btoa(req.body.newpassword.toString());
       const Password = encodedData;
@@ -176,14 +178,29 @@ exports.forgotpasswordMail= async (req, res) => {
       // Step 3 - Email the user a unique verification link
       const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}`;
       console.log(url);
-      transporter.sendMail({
-         to: email,
-         subject: 'Password Reset',
-         html: `Click <a href = '${url}'>here</a> to confirm your email for password reset.`
-      })
-      return res.status(201).send({
-         message: `Sent a verification email to ${email}`
-      });
+      console.log(login_method);
+      if(login_method=="mobile"){
+         var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , 
+                       message : "your reset link: "+url,  numbers : [incoming_user[login_method]]} ;
+         fast2sms.sendMessage(options).then(response=>{
+         console.log(response);
+         })
+         return res.status(201).send({
+         message: `Sent a verification sms to ${login_method}`
+         });
+
+      }
+      else if(login_method=="email"){
+         transporter.sendMail({
+            to: incoming_user[login_method],
+            subject: 'Password Reset',
+            html: `Click <a href = '${url}'>here</a> to confirm your email for password reset.`
+         })
+         return res.status(201).send({
+            message: `Sent a verification email to ${login_method}`
+         });
+         
+      }
 }
 
 exports.reset = async (req, res) => {
@@ -396,26 +413,6 @@ exports.loginotp = async(req,res)=>{
        return res.status(500).send(err);
     }
 
-}
-exports.forgotpasswordMobile= async (req, res) => {
-
-   const { mobile } = req.body;
-   const user = await User.findOne({ mobile }).exec();
-   const verificationToken = user.generateVerificationToken();
-   const encodedData = btoa(req.body.newpassword.toString());
-   const Password = encodedData;
-   //console.log(verificationToken);
-   // Step 3 - Email the user a unique verification link
-   const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}`;
-   console.log(url);
-   var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : "your reset link: "+url,  numbers : [mobile]} ;
-   fast2sms.sendMessage(options).then(response=>{
-      //res.status(201).send(response);
-      console.log(response);
-   })
-   return res.status(201).send({
-      message: `Sent a verification sms to ${mobile}`
-   });
 }
 exports.update = async (req, res) => {
    const login_method = req.params.login_method;
