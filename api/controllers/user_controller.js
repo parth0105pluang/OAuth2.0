@@ -42,20 +42,24 @@ client.on('connect', function (err) {
 client.connect();
  
 
-exports.signupMail = async (req, res) => {
+exports.signup = async (req, res) => {
+    const login_method = req.params.login_method;
+    incoming_user = {};
+    incoming_user[login_method] = req.body[login_method];
+    const {mobile} = req.body;
     const { email } = req.body;
     const { firstname } = req.body;
     const {lastname} = req.body;
     const{password} = req.body;
-    if (!email) {
-       return res.status(422).send({ message: "Missing email." });
+    if (!incoming_user[login_method]) {
+       return res.status(422).send({ message: `Missing ${login_method}` });
     }
     try{
        // Check if the email is in use
-       const existingUser = await User.findOne({ email }).exec();
+       const existingUser = await User.findOne(incoming_user).exec();
        if (existingUser) {
           return res.status(409).send({ 
-                message: "Email is already in use."
+                message: `${login_method} is already in use.`
           });
        }
        // Step 1 - Create and save the user
@@ -64,35 +68,44 @@ exports.signupMail = async (req, res) => {
           email: email,
           firstname:  firstname, 
           lastname: lastname,
-          password: password
+          password: password,
+          mobile: mobile
 
       }).save();
       //Cache the data
       try {
-         await client.HSET(email,'id', user._id);
-         await client.HSET(email, 'email', email);
-         await client.HSET(email, 'firstname', firstname);
-         await client.HSET(email, 'lastname', lastname);
-         
+         await client.HSET(incoming_user[login_method],'id', user._id);
+         await client.HSET(incoming_user[login_method], 'email', email);
+         await client.HSET(incoming_user[login_method], 'firstname', firstname);
+         await client.HSET(incoming_user[login_method], 'lastname', lastname);
+         await client.HSET(incoming_user[login_method],'mobile',mobile)
       } catch (error) {
           console.log(error);
       }
    
       // Step 2 - Generate a verification token with the user's ID
       const verificationToken = user.generateVerificationToken();
-      const verification_type = "mail"
       //console.log(verificationToken);
       // Step 3 - Email the user a unique verification link
-      const url = `http://localhost:3000/api/verify/${verificationToken}/${verification_type}`;
+      const url = `http://localhost:3000/api/verify/${verificationToken}/${login_method}`;
       console.log(url);
-      transporter.sendMail({
-         to: email,
-         subject: 'Verify Account',
-         html: `Click <a href = '${url}'>here</a> to confirm your email.`
-      })
-      return res.status(201).send({
-         message: `Sent a verification email to ${email}`
-      });
+      if(login_method=="email"){
+         transporter.sendMail({
+            to: email,
+            subject: 'Verify Account',
+            html: `Click <a href = '${url}'>here</a> to confirm your email.`
+         })
+         return res.status(201).send({
+            message: `Sent a verification email to ${email}`
+         });
+      }
+      else if(login_method=="mobile"){
+         var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : url,  numbers : [mobile]} ;
+         fast2sms.sendMessage(options).then(response=>{
+           res.status(201).send(response);
+         })
+      }
+      
    } catch(err){
       return res.status(500).send(err);
    }
@@ -274,57 +287,6 @@ exports.reset = async (req, res) => {
     }
 }
 
-
-exports.signupMobile = async (req, res) => {
-   const { mobile } = req.body;
-   const {email} = req.body;
-   console.log({mobile});
-   //console.log(req.body);
-   //console.log(email);
-   const { firstname } = req.body;
-   const {lastname} = req.body;
-   const{password} = req.body;
-   //console.log(firstname);
-   //console.log(lastname);
-   // Check we have an mno.
-   if (!mobile) {
-      return res.status(422).send({ message: "Missing number." });
-   }
-   try{
-      // Check if the email is in use
-      const existingUser = await (User.findOne({ mobile }).exec());
-      console.log(existingUser);
-      if (existingUser) {
-         return res.status(409).send({ 
-               message: "Number is already in use."
-         });
-      }
-      // Step 1 - Create and save the user
-     const user = await new User({
-         _id: new mongoose.Types.ObjectId,
-         mobile: mobile,
-         firstname:  firstname, 
-         lastname: lastname,
-         password: password
-
-     }).save();
-     // Step 2 - Generate a verification token with the user's ID
-     const verificationToken = user.generateVerificationToken();
-     const verification_type= "mobile"
-     //console.log(verificationToken);
-     // Step 3 - Email the user a unique verification link
-     const url = `http://localhost:3000/api/verify/${verificationToken}/${verification_type}`;
-     console.log(url);
-     var options = {authorization : "zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38" , message : url,  numbers : [mobile]} ;
-    fast2sms.sendMessage(options).then(response=>{
-      res.status(201).send(response);
-    })
-
-  } catch(err){
-     return res.status(500).send(err);
-  }
-}
-
 exports.getotp = async(req,res)=>{
    
       const { mobile } = req.body;
@@ -501,11 +463,12 @@ exports.dispData = async(req,res)=>{
    incoming_user[login_method] = req.body[login_method];
    try {
       var cache=await client.hGetAll(incoming_user[login_method]);
-      
+      //console.log(cache);
+      //console.log(Object.keys(cache).length);
    } catch (error) {
       console.log(error);
    }
-   if(cache){
+   if(Object.keys(cache).length!=0){
       return res.status(200).send({
          cache
       });
