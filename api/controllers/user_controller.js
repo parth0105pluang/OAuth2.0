@@ -78,7 +78,9 @@ exports.signup = async (req, res) => {
          await client.HSET(incoming_user[login_method], 'email', email);
          await client.HSET(incoming_user[login_method], 'firstname', firstname);
          await client.HSET(incoming_user[login_method], 'lastname', lastname);
-         await client.HSET(incoming_user[login_method],'mobile',mobile)
+         await client.HSET(incoming_user[login_method],'mobile',mobile);
+         await client.HSET(incoming_user[login_method],'password',password);
+
       } catch (error) {
           console.log(error);
       }
@@ -111,7 +113,7 @@ exports.signup = async (req, res) => {
    }
 }
 exports.verify = async (req, res) => {
-    console.log("called");
+    console.log("verify called");
     const { token } = req.params;
     const { user_varification_type } = req.params;
     // Check we have an id
@@ -142,7 +144,7 @@ exports.verify = async (req, res) => {
         if(user_varification_type=="mobile"){
              user.mobile_verified = true;
         }
-        else if(user_varification_type=="mail"){
+        else if(user_varification_type=="email"){
              user.mail_verified = true;
         }
         await user.save();
