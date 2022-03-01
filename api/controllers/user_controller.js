@@ -31,7 +31,6 @@ var data = CryptoJS.AES.encrypt("Message", key); // Encryption Part
 var decrypted = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8); // Message
 
 */
-
 const client = redis.createClient();
  
 client.on('error', (err) => console.log('Redis Client Error', err));
@@ -78,9 +77,13 @@ exports.signup = async (req, res) => {
          await client.HSET(incoming_user[login_method], 'firstname', firstname);
          await client.HSET(incoming_user[login_method], 'lastname', lastname);
          await client.HSET(incoming_user[login_method],'mobile',mobile);
-         await client.HSET(incoming_user[login_method],'password',password);
+         //await client.HSET(incoming_user[login_method],'password',password);
          await client.HSET(incoming_user[login_method],'mail_verified',false);
          await client.HSET(incoming_user[login_method],'mobile_verified',false);
+         bcrypt.hash(password, 10, function(err, hash) {
+            //console.log(err);
+            client.HSET(incoming_user[login_method],'password',hash);
+        });
       } catch (error) {
           console.log(error);
       }
@@ -192,16 +195,19 @@ exports.login = async (req, res) => {
      }); 
 
    }
-   if(req.body.password==cache.password){
-      return res.status(200).send({
-         cache
-      });
-   }
-   else{
-         return res.status(403).send({ 
-            message: "Wrong Password" 
-      });
-   }
+   bcrypt.compare(req.body.password, cache.password, function(err, result) {
+      if(result==true){
+         return res.status(200).send({
+            cache
+         });
+      }
+      else{
+            return res.status(403).send({ 
+               message: "Wrong Password" 
+         });
+      }
+   });
+   
 }
    else{
       try{
