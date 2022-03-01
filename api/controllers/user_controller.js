@@ -460,6 +460,35 @@ exports.logInMiddwre =async (req, res, next) =>{
                message: `Missing ${login_method}.` 
           });
       }
+      try {
+         var cache=await client.hGetAll(incoming_user[login_method]);
+      } catch (error) {
+         console.log(error);
+      }
+      if(Object.keys(cache).length!=0){
+         //console.log(cache.password);
+         //console.log(cache.mail_verified);
+         if(login_method=="email"&&cache.mail_verified=="false"){
+            return res.status(403).send({ 
+                  message: "Verify your Account." 
+            });
+         }
+       else if(login_method=="mobile"&&cache.mobile_verified=="false"){
+        return res.status(403).send({ 
+           message: "Verify your Account." 
+        }); 
+   
+      }
+      if(req.body.password==cache.password){
+         next();
+      }
+      else{
+            return res.status(403).send({ 
+               message: "Wrong Password" 
+         });
+       }
+      }
+      else{
       try{
           
           const user = await User.findOne(incoming_user).exec();
@@ -498,6 +527,7 @@ exports.logInMiddwre =async (req, res, next) =>{
        } catch(err) {
           return res.status(500).send(err);
        }
+      }
 }
 exports.dispData = async(req,res)=>{
    const login_method = req.params.login_method;
