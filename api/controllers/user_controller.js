@@ -441,15 +441,27 @@ exports.update = async (req, res) => {
    if(login_method=="email"){
       if(req.body.firstname){
       user.firstname = firstname;
+      if(Object.keys(cache).length!=0){
+         await client.HSET(incoming_user[login_method],'firstname', firstname);
+      }
       }
       if(req.body.lastname){
       user.lastname = lastname;
+      if(Object.keys(cache).length!=0){
+         await client.HSET(incoming_user[login_method],'lastname', lastname);
+      }
       }
       if(req.body.mobile){
       user.mobile = mobile;
+      if(Object.keys(cache).length!=0){
+         await client.HSET(incoming_user[login_method],'mobile', mobile);
+      }
       }
       if(req.body.newpassword){
       user.password = req.body.newpassword;
+      if(Object.keys(cache).length!=0){
+         await client.HSET(incoming_user[login_method],'password',req.body.newpassword);
+      }
       }
       
    }
