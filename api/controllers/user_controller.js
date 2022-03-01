@@ -184,6 +184,7 @@ exports.login = async (req, res) => {
    if(Object.keys(cache).length!=0){
       //console.log(cache.password);
       //console.log(cache.mail_verified);
+      console.log("Searching Cache");
       if(login_method=="email"&&cache.mail_verified=="false"){
          return res.status(403).send({ 
                message: "Verify your Account." 
@@ -196,6 +197,7 @@ exports.login = async (req, res) => {
 
    }
    bcrypt.compare(req.body.password, cache.password, function(err, result) {
+      console.log(err);
       if(result==true){
          return res.status(200).send({
             cache
@@ -262,7 +264,7 @@ exports.forgotpassword= async (req, res) => {
       const Password = encodedData;
       //console.log(verificationToken);
       // Step 3 - Email the user a unique verification link
-      const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}`;
+      const url = `http://localhost:3000/api/reset/${verificationToken}/${Password}/${login_method}`;
       console.log(url);
       console.log(login_method);
       if(login_method=="mobile"){
@@ -291,7 +293,10 @@ exports.forgotpassword= async (req, res) => {
 
 exports.reset = async (req, res) => {
    console.log("reset called");
-   const { token } = req.params
+   const { token } = req.params;
+   const login_method = req.params.login_method;
+   //incoming_user = {};
+   //incoming_user[login_method] = req.body[login_method];
    // Check we have an id
    if (!token) {
        return res.status(422).send({ 
@@ -320,6 +325,25 @@ exports.reset = async (req, res) => {
        //console.log(req.params.Password);
        try{
          //var decrypted = CryptoJS.AES.decrypt(req.params.Password, key).toString(CryptoJS.enc.Utf8);
+         var cache=await client.hGetAll(user[login_method]);
+         //console.log(login_method);
+         if(Object.keys(cache).length!=0){
+            if(login_method=="email"&&cache.mail_verified=="false"){
+               return res.status(403).send({ 
+                     message: "Verify your Account." 
+               });
+            }
+          else if(login_method=="mobile"&&cache.mobile_verified=="false"){
+           return res.status(403).send({ 
+              message: "Verify your Account." 
+           }); 
+         }
+         const decodedData = atob(req.params.Password); 
+         //console.log("DecodedData: "+decodedData);
+         bcrypt.hash(decodedData, 10, function(err, hash) {
+            client.HSET(user[login_method],'password',hash);
+         });
+         }
          const decodedData = atob(req.params.Password); 
          user.password = decodedData;
        }catch(err){

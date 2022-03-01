@@ -9,7 +9,7 @@ router.post('/login/:login_method', UserController.login);
 //router.post('/login/mobile', UserController.loginMobile);
 router.post('/getotp', UserController.getotp);
 router.get('/verify/:token/:user_varification_type', UserController.verify);
-router.get('/reset/:token/:Password',UserController.reset);
+router.get('/reset/:token/:Password/:login_method',UserController.reset);
 router.post('/forgotpassword/:login_method',UserController.forgotpassword);
 router.post('/login/otp',UserController.loginotp);
 router.put('/update/:login_method',UserController.logInMiddwre,UserController.update);
