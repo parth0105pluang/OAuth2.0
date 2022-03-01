@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const redis = require("redis");
 const otpGenerator = require('otp-generator');
-//const CryptoJS = require("crypto-js");
 const fast2sms = require('fast-two-sms') ;
 global.Buffer = global.Buffer || require('buffer').Buffer;
 if (typeof btoa === 'undefined') {
@@ -174,46 +173,78 @@ exports.login = async (req, res) => {
              message: `Missing ${login_method}` 
         });
     }
-    try{
-        // Step 1 - Verify a user with the email exists
-        const user = await User.findOne(incoming_user).exec();
-        if (!user) {
-             return res.status(404).send({ 
-                   message: "User does not exists" 
-             });
-        }
-        // Step 2 - Ensure the account has been verified
-        if(login_method=="email"&&!user.mail_verified){
-             return res.status(403).send({ 
-                   message: "Verify your Account." 
-             });
-        }
-        else if(login_method=="mobile"&&!user.mobile_verified){
+    try {
+      var cache=await client.hGetAll(incoming_user[login_method]);
+   } catch (error) {
+      console.log(error);
+   }
+   if(Object.keys(cache).length!=0){
+      //console.log(cache.password);
+      //console.log(cache.mail_verified);
+      if(login_method=="email"&&cache.mail_verified=="false"){
          return res.status(403).send({ 
-            message: "Verify your Account." 
-         }); 
-
-        }
-        user.comparePassword(req.body.password, function(err, isMatch) {
-         if (err) throw err;
-         console.log('Password Matched', isMatch);
-         if(isMatch){
-                
-            return res.status(200).send({
-               message: "User logged in"
-            });
-         }
-         else{
-            return res.status(403).send({ 
-               message: "Wrong Password" 
+               message: "Verify your Account." 
          });
+      }
+    else if(login_method=="mobile"&&cache.mobile_verified=="false"){
+     return res.status(403).send({ 
+        message: "Verify your Account." 
+     }); 
+
+   }
+   if(req.body.password==cache.password){
+      return res.status(200).send({
+         cache
+      });
+   }
+   else{
+         return res.status(403).send({ 
+            message: "Wrong Password" 
+      });
+   }
+}
+   else{
+      try{
+         // Step 1 - Verify a user with the email exists
+         const user = await User.findOne(incoming_user).exec();
+         if (!user) {
+              return res.status(404).send({ 
+                    message: "User does not exists" 
+              });
          }
-         
-     });
-     } catch(err) {
-        console.log(err);
-        return res.status(500).send(err);
-     }
+         // Step 2 - Ensure the account has been verified
+         if(login_method=="email"&&!user.mail_verified){
+              return res.status(403).send({ 
+                    message: "Verify your Account." 
+              });
+         }
+         else if(login_method=="mobile"&&!user.mobile_verified){
+          return res.status(403).send({ 
+             message: "Verify your Account." 
+          }); 
+ 
+         }
+         user.comparePassword(req.body.password, function(err, isMatch) {
+          if (err) throw err;
+          console.log('Password Matched', isMatch);
+          if(isMatch){
+                 
+             return res.status(200).send({
+                message: "User logged in"
+             });
+          }
+          else{
+             return res.status(403).send({ 
+                message: "Wrong Password" 
+          });
+          }
+          
+         });
+      } catch(err) {
+         console.log(err);
+         return res.status(500).send(err);
+      }
+   }
 }
 exports.forgotpassword= async (req, res) => {
       const login_method = req.params.login_method;
