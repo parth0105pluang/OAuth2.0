@@ -510,14 +510,16 @@ exports.logInMiddwre =async (req, res, next) =>{
         }); 
    
       }
-      if(req.body.password==cache.password){
-         next();
-      }
-      else{
-            return res.status(403).send({ 
-               message: "Wrong Password" 
-         });
-       }
+      bcrypt.compare(req.body.password, cache.password, function(err, result) {
+         if(result==true){
+            next();
+         }
+         else{
+               return res.status(403).send({ 
+                  message: "Wrong Password" 
+            });
+         }
+      });
       }
       else{
       try{
