@@ -80,7 +80,8 @@ exports.signup = async (req, res) => {
          await client.HSET(incoming_user[login_method], 'lastname', lastname);
          await client.HSET(incoming_user[login_method],'mobile',mobile);
          await client.HSET(incoming_user[login_method],'password',password);
-
+         await client.HSET(incoming_user[login_method],'mail_verified',false);
+         await client.HSET(incoming_user[login_method],'mobile_verified',false);
       } catch (error) {
           console.log(error);
       }
@@ -135,6 +136,7 @@ exports.verify = async (req, res) => {
     try{
         // Step 2 - Find user with matching ID
         const user = await User.findOne({ _id: payload.ID }).exec();
+        var cache=await client.hGetAll(user[user_varification_type]);
         if (!user) {
            return res.status(404).send({ 
               message: "User does not  exists" 
@@ -143,15 +145,22 @@ exports.verify = async (req, res) => {
         // Step 3 - Update user verification status to true
         if(user_varification_type=="mobile"){
              user.mobile_verified = true;
+             if(Object.keys(cache).length!=0){
+               await client.HSET(user.mobile,'mobile_verified',true);
+            }
         }
         else if(user_varification_type=="email"){
              user.mail_verified = true;
+             if(Object.keys(cache).length!=0){
+               await client.HSET(user.email,'mail_verified',true);
+            }
         }
         await user.save();
         return res.status(200).send({
               message: "Account Verified"
         });
      } catch (err) {
+        console.log(err);
         return res.status(500).send(err);
      }
 }
