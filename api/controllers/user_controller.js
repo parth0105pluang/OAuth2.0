@@ -407,6 +407,7 @@ exports.update = async (req, res) => {
    incoming_user = {};
    incoming_user[login_method] = req.body[login_method];
    const user = await User.findOne(incoming_user).exec();
+   var cache=await client.hGetAll(incoming_user[login_method]);
    const { email } = req.body;
    const { firstname } = req.body;
    const {lastname} = req.body;
@@ -414,15 +415,27 @@ exports.update = async (req, res) => {
    if(login_method=="mobile"){
          if(req.body.firstname){
          user.firstname = firstname;
+         if(Object.keys(cache).length!=0){
+            await client.HSET(incoming_user[login_method],'firstname', firstname);
+         }
          }
          if(req.body.lastname){
          user.lastname = lastname;
+         if(Object.keys(cache).length!=0){
+            await client.HSET(incoming_user[login_method],'lastname', lastname);
+         }
          }
          if(req.body.email){
          user.email = email;
+         if(Object.keys(cache).length!=0){
+            await client.HSET(incoming_user[login_method],'email', email);
+         }
          }
          if(req.body.newpassword){
          user.password = req.body.newpassword;
+         if(Object.keys(cache).length!=0){
+            await client.HSET(incoming_user[login_method],'password', req.body.newpassword);
+         }
          }
    }
    if(login_method=="email"){
