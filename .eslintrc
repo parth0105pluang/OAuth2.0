@@ -1,0 +1,58 @@
+{
+    "root": true,
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "settings": {
+        "import/resolver": {
+            "typescript": {}
+        },
+        "import/parsers": {
+            "typescript-eslint-parser": [".ts"]
+        }
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["import", "@typescript-eslint", "prettier", "unicorn", "sonarjs", "promise", "simple-import-sort"],
+    "parserOptions": {
+        "project": "./tsconfig.json",
+        "sourceType": "module"
+    },
+    "extends": [
+        "airbnb-typescript/base",
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
+        "plugin:sonarjs/recommended",
+        "plugin:promise/recommended"
+    ],
+    "rules": {
+        "indent": "off",
+        "@typescript-eslint/indent": ["error", 4],
+        "newline-per-chained-call": 2,
+        "no-console": 2,
+        "eol-last": 2,
+        "unicorn/filename-case": [
+            "error",
+            {
+                "case": "kebabCase"
+            }
+        ],
+        "simple-import-sort/imports": [
+            "error",
+            {
+                "groups": [["^\\u0000"], ["^@?\\w"], ["^\\./config*"], ["^"], ["^\\."]]
+            }
+        ],
+        "simple-import-sort/exports": "error",
+        "import/no-duplicates": "error",
+        "arrow-body-style": ["error", "as-needed"],
+        "no-multiple-empty-lines": ["error", { "max": 1 }]
+    }
+}
+
+
+
+
+

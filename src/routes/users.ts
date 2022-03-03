@@ -1,0 +1,15 @@
+import * as express from 'express';
+export const userRouter = express.Router();
+import * as UserController from '../controllers/user.controller';
+//const key = "2e35f242a46d67eeb74aabc37d5e5d05";
+userRouter.post('/login/otp', UserController.loginotp);
+userRouter.get('/data/:login_method', UserController.logInMiddwre, UserController.dispData);
+userRouter.post('/signup/:login_method', UserController.signup);
+//router.post('/signup/mobile', UserController.signupMobile);
+userRouter.post('/login/:login_method', UserController.login);
+//router.post('/login/mobile', UserController.loginMobile);
+userRouter.post('/getotp', UserController.getotp);
+userRouter.get('/verify/:token/:user_varification_type', UserController.verify);
+userRouter.get('/reset/:token/:Password/:login_method', UserController.reset);
+userRouter.post('/forgotpassword/:login_method', UserController.forgotpassword);
+userRouter.put('/update/:login_method', UserController.logInMiddwre, UserController.update);
