@@ -4,10 +4,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable promise/always-return */
 /* eslint-disable promise/catch-or-return */
-/* eslint-disable no-console */
-/* eslint-disable unicorn/filename-case */
-/* eslint-disable @typescript-eslint/no-var-requires */
+//disable no-//console 
+//unicorn/filename-case
+// @typescript-eslint/no-var-requires
 import * as bcrypt from 'bcrypt';
+import {Buffer} from 'buffer';
 import * as fast2sms from 'fast-two-sms';
 import * as jwt from 'jsonwebtoken';
 import * as mongoose from 'mongoose';
@@ -16,7 +17,7 @@ import * as otpGenerator from 'otp-generator';
 
 import * as client from '../helpers/account.cache';
 import User from '../models/user_model';
-global.Buffer = global.Buffer || require('buffer').Buffer;
+global.Buffer = global.Buffer || Buffer;
 if (typeof btoa === 'undefined') {
     global.btoa = function (str) {
         return new Buffer(str, 'binary').toString('base64');
@@ -87,19 +88,19 @@ export async function signup(req, res) {
 
             bcrypt.hash(password, 10, function (err: any, hash) {
                 if (err) {
-                    console.log(err);
+                    //console.log(err);
                 }
                 client.HSET(IncomingUser[LoginMethod], 'password', hash);
             });
         } catch (error) {
-            console.log(error);
+            //console.log(error);
         }
 
         // Step 2 - Generate a verification token with the user's ID
         const verificationToken = user.generateVerificationToken();
         // Step 3 - Email the user a unique verification link
         const url = `http://localhost:3000/user/verify/${verificationToken}/${LoginMethod}`;
-        console.log(url);
+        //console.log(url);
         if (LoginMethod == 'email') {
             transporter.sendMail({
                 to: email,
@@ -121,12 +122,12 @@ export async function signup(req, res) {
             });
         }
     } catch (err) {
-        console.log(err);
+        //console.log(err);
         return res.status(500).send(err);
     }
 }
 export async function verify(req, res) {
-    console.log('verify called');
+    //console.log('verify called');
     const { token } = req.params;
     const { UserVerificationType } = req.params;
     // Check we have an id
@@ -169,7 +170,7 @@ export async function verify(req, res) {
             message: 'Account Verified',
         });
     } catch (err) {
-        console.log(err);
+        //console.log(err);
         return res.status(500).send(err);
     }
 }
@@ -188,7 +189,7 @@ export async function login(req, res) {
     if (Object.keys(cache).length != 0) {
         //console.log(cache.password);
         //console.log(cache.mail_verified);
-        console.log('Searching Cache');
+        //console.log('Searching Cache');
         if (
             (LoginMethod == 'email' && cache.mail_verified == 'false') ||
             (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
@@ -198,7 +199,7 @@ export async function login(req, res) {
             });
         }
         bcrypt.compare(req.body.password, cache.password, function (err: any, result: boolean) {
-            console.log(err);
+            //console.log(err);
             if (result) {
                 return res.status(200).send({
                     cache,
@@ -229,7 +230,7 @@ export async function login(req, res) {
             }
             user.comparePassword(req.body.password, function (err: any, isMatch: any) {
                 if (err) throw err;
-                console.log('Password Matched', isMatch);
+                //console.log('Password Matched', isMatch);
                 if (isMatch) {
                     return res.status(200).send({
                         message: 'User logged in',
@@ -241,7 +242,7 @@ export async function login(req, res) {
                 }
             });
         } catch (err) {
-            console.log(err);
+            //console.log(err);
             return res.status(500).send(err);
         }
     }
@@ -257,8 +258,8 @@ export async function forgotpassword(req, res) {
     //console.log(verificationToken);
     // Step 3 - Email the user a unique verification link
     const url = `http://localhost:3000/user/reset/${verificationToken}/${Password}/${LoginMethod}`;
-    console.log(url);
-    console.log(LoginMethod);
+    //console.log(url);
+    //console.log(LoginMethod);
     if (LoginMethod == 'mobile') {
         const options = {
             authorization: 'zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38',
@@ -266,7 +267,8 @@ export async function forgotpassword(req, res) {
             numbers: [IncomingUser[LoginMethod]],
         };
         fast2sms.sendMessage(options).then((response: any) => {
-            console.log(response);
+            response.toJson();
+            //console.log(response);
         });
         return res.status(201).send({
             message: `Sent a verification sms to ${LoginMethod}`,
@@ -284,7 +286,7 @@ export async function forgotpassword(req, res) {
 }
 
 export async function reset(req, res) {
-    console.log('reset called');
+    //console.log('reset called');
     const { token } = req.params;
     const LoginMethod = req.params.LoginMethod;
     //IncomingUser = {};
@@ -334,7 +336,7 @@ export async function reset(req, res) {
             const decodedData = atob(req.params.Password);
             user.password = decodedData;
         } catch (err) {
-            console.log(err);
+            //console.log(err);
         }
 
         await user.save();
@@ -412,13 +414,13 @@ export async function loginotp(req, res) {
             });
         }
         if (user.otp == otp) {
-            console.log('LOGGED IN');
+            //console.log('LOGGED IN');
             return res.status(200).send({
                 message: 'Logged In',
             });
         }
     } catch (err) {
-        console.log(err);
+        //console.log(err);
         return res.status(500).send(err);
     }
 }
@@ -484,9 +486,9 @@ export async function update(req, res) {
             }
         }
     }
-    console.log(user);
+    //console.log(user);
     user.save(function () {
-        console.log('Saved');
+        //console.log('Saved');
     });
     return res.status(200).send({
         message: 'Updated!!',
@@ -547,7 +549,7 @@ export async function logInMiddwre(req, res, next: () => void) {
             }
             user.comparePassword(req.body.password, function (err: any, isMatch: any) {
                 if (err) throw err;
-                console.log('Password Matched', isMatch);
+                //console.log('Password Matched', isMatch);
                 if (isMatch) {
                     next();
                 } else {
@@ -579,7 +581,7 @@ export async function dispData(req, res) {
     }
 }
 export async function deleteUser(req, res) {
-    console.log('Delete Called');
+    //console.log('Delete Called');
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
@@ -589,18 +591,20 @@ export async function deleteUser(req, res) {
         client
             .del(IncomingUser[LoginMethod])
             .then(function () {
-                console.log('Data deleted from redis'); // Success
+                //console.log('Data deleted from redis'); // Success
             })
             .catch(function (error) {
+                // eslint-disable-next-line no-console
                 console.log(error); // Failure
             });
     }
     if (user) {
         User.deleteOne(IncomingUser)
             .then(function () {
-                console.log('Data deleted from mongo');
+                //console.log('Data deleted from mongo');
             })
             .catch(function (error) {
+                // eslint-disable-next-line no-console
                 console.log(error);
             });
     }
