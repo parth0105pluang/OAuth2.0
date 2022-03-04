@@ -1,10 +1,9 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sonarjs/cognitive-complexity */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable promise/always-return */
 /* eslint-disable promise/catch-or-return */
-/* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable no-console */
 /* eslint-disable unicorn/filename-case */
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -37,23 +36,23 @@ const transporter = nodemailer.createTransport({
     },
 });
 export async function signup(req, res) {
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
     const { mobile } = req.body;
     const { email } = req.body;
     const { firstname } = req.body;
     const { lastname } = req.body;
     const { password } = req.body;
-    if (!incoming_user[login_method]) {
-        return res.status(422).send({ message: `Missing ${login_method}` });
+    if (!IncomingUser[LoginMethod]) {
+        return res.status(422).send({ message: `Missing ${LoginMethod}` });
     }
     try {
         // Check if the email is in use
-        const existingUser = await User.findOne(incoming_user).exec();
+        const existingUser = await User.findOne(IncomingUser).exec();
         if (existingUser) {
             return res.status(409).send({
-                message: `${login_method} is already in use.`,
+                message: `${LoginMethod} is already in use.`,
             });
         }
         // Step 1 - Create and save the user
@@ -69,7 +68,7 @@ export async function signup(req, res) {
         try {
             await client.sendCommand([
                 'hmset',
-                incoming_user[login_method],
+                IncomingUser[LoginMethod],
                 'id',
                 user._id,
                 'email',
@@ -90,7 +89,7 @@ export async function signup(req, res) {
                 if (err) {
                     console.log(err);
                 }
-                client.HSET(incoming_user[login_method], 'password', hash);
+                client.HSET(IncomingUser[LoginMethod], 'password', hash);
             });
         } catch (error) {
             console.log(error);
@@ -99,9 +98,9 @@ export async function signup(req, res) {
         // Step 2 - Generate a verification token with the user's ID
         const verificationToken = user.generateVerificationToken();
         // Step 3 - Email the user a unique verification link
-        const url = `http://localhost:3000/user/verify/${verificationToken}/${login_method}`;
+        const url = `http://localhost:3000/user/verify/${verificationToken}/${LoginMethod}`;
         console.log(url);
-        if (login_method == 'email') {
+        if (LoginMethod == 'email') {
             transporter.sendMail({
                 to: email,
                 subject: 'Verify Account',
@@ -110,7 +109,7 @@ export async function signup(req, res) {
             return res.status(201).send({
                 message: `Sent a verification email to ${email}`,
             });
-        } else if (login_method == 'mobile') {
+        } else if (LoginMethod == 'mobile') {
             const options = {
                 authorization: 'zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38',
                 message: url,
@@ -129,7 +128,7 @@ export async function signup(req, res) {
 export async function verify(req, res) {
     console.log('verify called');
     const { token } = req.params;
-    const { user_varification_type } = req.params;
+    const { UserVerificationType } = req.params;
     // Check we have an id
     if (!token) {
         return res.status(422).send({
@@ -147,19 +146,19 @@ export async function verify(req, res) {
     try {
         // Step 2 - Find user with matching ID
         const user = await User.findOne({ _id: payload.ID }).exec();
-        const cache = await client.hGetAll(user[user_varification_type]);
+        const cache = await client.hGetAll(user[UserVerificationType]);
         if (!user) {
             return res.status(404).send({
                 message: 'User does not  exists',
             });
         }
         // Step 3 - Update user verification status to true
-        if (user_varification_type == 'mobile') {
+        if (UserVerificationType == 'mobile') {
             user.mobile_verified = true;
             if (Object.keys(cache).length != 0) {
                 await client.HSET(user.mobile, 'mobile_verified', 'true');
             }
-        } else if (user_varification_type == 'email') {
+        } else if (UserVerificationType == 'email') {
             user.mail_verified = true;
             if (Object.keys(cache).length != 0) {
                 await client.HSET(user.email, 'mail_verified', 'true');
@@ -175,24 +174,24 @@ export async function verify(req, res) {
     }
 }
 export async function login(req, res) {
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
-    //console.log(incoming_user[login_method])
-    if (!incoming_user[login_method]) {
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
+    //console.log(IncomingUser[LoginMethod])
+    if (!IncomingUser[LoginMethod]) {
         return res.status(422).send({
-            message: `Missing ${login_method}`,
+            message: `Missing ${LoginMethod}`,
         });
     }
 
-    const cache = await client.hGetAll(incoming_user[login_method]);
+    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
     if (Object.keys(cache).length != 0) {
         //console.log(cache.password);
         //console.log(cache.mail_verified);
         console.log('Searching Cache');
         if (
-            (login_method == 'email' && cache.mail_verified == 'false') ||
-            (login_method == 'mobile' && cache.mobile_verified == 'false')
+            (LoginMethod == 'email' && cache.mail_verified == 'false') ||
+            (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
         ) {
             return res.status(403).send({
                 message: 'Verify your Account.',
@@ -213,7 +212,7 @@ export async function login(req, res) {
     } else {
         try {
             // Step 1 - Verify a user with the email exists
-            const user = await User.findOne(incoming_user).exec();
+            const user = await User.findOne(IncomingUser).exec();
             if (!user) {
                 return res.status(404).send({
                     message: 'User does not exists',
@@ -221,8 +220,8 @@ export async function login(req, res) {
             }
             // Step 2 - Ensure the account has been verified
             if (
-                (login_method == 'email' && !user.mail_verified) ||
-                (login_method == 'mobile' && !user.mobile_verified)
+                (LoginMethod == 'email' && !user.mail_verified) ||
+                (LoginMethod == 'mobile' && !user.mobile_verified)
             ) {
                 return res.status(403).send({
                     message: 'Verify your Account.',
@@ -248,38 +247,38 @@ export async function login(req, res) {
     }
 }
 export async function forgotpassword(req, res) {
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
-    const user = await User.findOne(incoming_user).exec();
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
+    const user = await User.findOne(IncomingUser).exec();
     const verificationToken = user.generateVerificationToken();
     const encodedData = btoa(req.body.newpassword.toString());
     const Password = encodedData;
     //console.log(verificationToken);
     // Step 3 - Email the user a unique verification link
-    const url = `http://localhost:3000/user/reset/${verificationToken}/${Password}/${login_method}`;
+    const url = `http://localhost:3000/user/reset/${verificationToken}/${Password}/${LoginMethod}`;
     console.log(url);
-    console.log(login_method);
-    if (login_method == 'mobile') {
+    console.log(LoginMethod);
+    if (LoginMethod == 'mobile') {
         const options = {
             authorization: 'zRoW9QuKVcC5qhgIYnbDXrmPdZT36iajk8pJ4tFUL2xvNwESAybHQcfnlaOJ2DBqIVsg46F0ijUrzM38',
             message: 'your reset link: ' + url,
-            numbers: [incoming_user[login_method]],
+            numbers: [IncomingUser[LoginMethod]],
         };
         fast2sms.sendMessage(options).then((response: any) => {
             console.log(response);
         });
         return res.status(201).send({
-            message: `Sent a verification sms to ${login_method}`,
+            message: `Sent a verification sms to ${LoginMethod}`,
         });
-    } else if (login_method == 'email') {
+    } else if (LoginMethod == 'email') {
         transporter.sendMail({
-            to: incoming_user[login_method],
+            to: IncomingUser[LoginMethod],
             subject: 'Password Reset',
             html: `Click <a href = '${url}'>here</a> to confirm your email for password reset.`,
         });
         return res.status(201).send({
-            message: `Sent a verification email to ${login_method}`,
+            message: `Sent a verification email to ${LoginMethod}`,
         });
     }
 }
@@ -287,9 +286,9 @@ export async function forgotpassword(req, res) {
 export async function reset(req, res) {
     console.log('reset called');
     const { token } = req.params;
-    const login_method = req.params.login_method;
-    //incoming_user = {};
-    //incoming_user[login_method] = req.body[login_method];
+    const LoginMethod = req.params.LoginMethod;
+    //IncomingUser = {};
+    //IncomingUser[LoginMethod] = req.body[LoginMethod];
     // Check we have an id
     if (!token) {
         return res.status(422).send({
@@ -315,12 +314,12 @@ export async function reset(req, res) {
         //console.log(req.params.Password);
         try {
             //var decrypted = CryptoJS.AES.decrypt(req.params.Password, key).toString(CryptoJS.enc.Utf8);
-            const cache = await client.hGetAll(user[login_method]);
-            //console.log(login_method);
+            const cache = await client.hGetAll(user[LoginMethod]);
+            //console.log(LoginMethod);
             if (Object.keys(cache).length != 0) {
                 if (
-                    (login_method == 'email' && cache.mail_verified == 'false') ||
-                    (login_method == 'mobile' && cache.mobile_verified == 'false')
+                    (LoginMethod == 'email' && cache.mail_verified == 'false') ||
+                    (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
                 ) {
                     return res.status(403).send({
                         message: 'Verify your Account.',
@@ -329,7 +328,7 @@ export async function reset(req, res) {
                 const decodedData = atob(req.params.Password);
                 //console.log("DecodedData: "+decodedData);
                 bcrypt.hash(decodedData, 10, function (err: any, hash) {
-                    client.HSET(user[login_method], 'password', hash);
+                    client.HSET(user[LoginMethod], 'password', hash);
                 });
             }
             const decodedData = atob(req.params.Password);
@@ -424,64 +423,64 @@ export async function loginotp(req, res) {
     }
 }
 export async function update(req, res) {
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
-    const user = await User.findOne(incoming_user).exec();
-    const cache = await client.hGetAll(incoming_user[login_method]);
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
+    const user = await User.findOne(IncomingUser).exec();
+    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
     const { email } = req.body;
     const { firstname } = req.body;
     const { lastname } = req.body;
     const { mobile } = req.body;
-    if (login_method == 'mobile') {
+    if (LoginMethod == 'mobile') {
         if (req.body.firstname) {
             user.firstname = firstname;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'firstname', firstname);
+                await client.HSET(IncomingUser[LoginMethod], 'firstname', firstname);
             }
         }
         if (req.body.lastname) {
             user.lastname = lastname;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'lastname', lastname);
+                await client.HSET(IncomingUser[LoginMethod], 'lastname', lastname);
             }
         }
         if (req.body.email) {
             user.email = email;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'email', email);
+                await client.HSET(IncomingUser[LoginMethod], 'email', email);
             }
         }
         if (req.body.newpassword) {
             user.password = req.body.newpassword;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'password', req.body.newpassword);
+                await client.HSET(IncomingUser[LoginMethod], 'password', req.body.newpassword);
             }
         }
     }
-    if (login_method == 'email') {
+    if (LoginMethod == 'email') {
         if (req.body.firstname) {
             user.firstname = firstname;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'firstname', firstname);
+                await client.HSET(IncomingUser[LoginMethod], 'firstname', firstname);
             }
         }
         if (req.body.lastname) {
             user.lastname = lastname;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'lastname', lastname);
+                await client.HSET(IncomingUser[LoginMethod], 'lastname', lastname);
             }
         }
         if (req.body.mobile) {
             user.mobile = mobile;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'mobile', mobile);
+                await client.HSET(IncomingUser[LoginMethod], 'mobile', mobile);
             }
         }
         if (req.body.newpassword) {
             user.password = req.body.newpassword;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(incoming_user[login_method], 'password', req.body.newpassword);
+                await client.HSET(IncomingUser[LoginMethod], 'password', req.body.newpassword);
             }
         }
     }
@@ -495,24 +494,24 @@ export async function update(req, res) {
 }
 export async function logInMiddwre(req, res, next: () => void) {
     //const { mobile } = req.body;
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
     // Check we have an valid login method
-    if (!incoming_user[login_method]) {
+    if (!IncomingUser[LoginMethod]) {
         return res.status(422).send({
-            message: `Missing ${login_method}.`,
+            message: `Missing ${LoginMethod}.`,
         });
     }
 
-    const cache = await client.hGetAll(incoming_user[login_method]);
+    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
 
     if (Object.keys(cache).length != 0) {
         //console.log(cache.password);
         //console.log(cache.mail_verified);
         if (
-            (login_method == 'email' && cache.mail_verified == 'false') ||
-            (login_method == 'mobile' && cache.mobile_verified == 'false')
+            (LoginMethod == 'email' && cache.mail_verified == 'false') ||
+            (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
         ) {
             return res.status(403).send({
                 message: 'Verify your Account.',
@@ -529,19 +528,19 @@ export async function logInMiddwre(req, res, next: () => void) {
         });
     } else {
         try {
-            const user = await User.findOne(incoming_user).exec();
+            const user = await User.findOne(IncomingUser).exec();
             if (!user) {
                 return res.status(404).send({
                     message: 'User does not exists',
                 });
             }
             // Step 2 - Ensure the account has been verified
-            if (login_method == 'mobile' && !user.mobile_verified) {
+            if (LoginMethod == 'mobile' && !user.mobile_verified) {
                 return res.status(403).send({
                     message: 'Verify your Account.',
                 });
             }
-            if (login_method == 'email' && !user.mail_verified) {
+            if (LoginMethod == 'email' && !user.mail_verified) {
                 return res.status(403).send({
                     message: 'Verify your Account.',
                 });
@@ -563,17 +562,17 @@ export async function logInMiddwre(req, res, next: () => void) {
     }
 }
 export async function dispData(req, res) {
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
-    const cache = await client.hGetAll(incoming_user[login_method]);
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
+    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
 
     if (Object.keys(cache).length != 0) {
         return res.status(200).send({
             cache,
         });
     } else {
-        const user = await User.findOne(incoming_user).exec();
+        const user = await User.findOne(IncomingUser).exec();
         return res.status(200).send({
             user,
         });
@@ -581,14 +580,14 @@ export async function dispData(req, res) {
 }
 export async function deleteUser(req, res) {
     console.log('Delete Called');
-    const login_method = req.params.login_method;
-    const incoming_user = {};
-    incoming_user[login_method] = req.body[login_method];
-    const cache = await client.hGetAll(incoming_user[login_method]);
-    const user = await User.findOne(incoming_user).exec();
+    const LoginMethod = req.params.LoginMethod;
+    const IncomingUser = {};
+    IncomingUser[LoginMethod] = req.body[LoginMethod];
+    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
+    const user = await User.findOne(IncomingUser).exec();
     if (Object.keys(cache).length != 0) {
         client
-            .del(incoming_user[login_method])
+            .del(IncomingUser[LoginMethod])
             .then(function () {
                 console.log('Data deleted from redis'); // Success
             })
@@ -597,7 +596,7 @@ export async function deleteUser(req, res) {
             });
     }
     if (user) {
-        User.deleteOne(incoming_user)
+        User.deleteOne(IncomingUser)
             .then(function () {
                 console.log('Data deleted from mongo');
             })
