@@ -4,9 +4,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable promise/always-return */
 /* eslint-disable promise/catch-or-return */
-//disable no-//console 
-//unicorn/filename-case
-// @typescript-eslint/no-var-requires
 import * as bcrypt from 'bcrypt';
 import {Buffer} from 'buffer';
 import * as fast2sms from 'fast-two-sms';
