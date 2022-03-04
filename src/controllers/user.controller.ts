@@ -38,13 +38,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASSWORD,
     },
 });
-//var key = "2e35f242a46d67eeb74aabc37d5e5d05";
-/*
-var key = "2e35f242a46d67eeb74aabc37d5e5d05";
-var data = CryptoJS.AES.encrypt("Message", key); // Encryption Part
-var decrypted = CryptoJS.AES.decrypt(data, key).toString(CryptoJS.enc.Utf8); // Message
-
-*/
 export async function signup(req, res) {
     const login_method = req.params.login_method;
     const incoming_user = {};
@@ -96,7 +89,9 @@ export async function signup(req, res) {
             ]);
 
             bcrypt.hash(password, 10, function (err: any, hash) {
-                //console.log(err);
+                if(err){
+                    console.log(err);
+                }
                 client.HSET(incoming_user[login_method], 'password', hash);
             });
         } catch (error) {
@@ -105,7 +100,6 @@ export async function signup(req, res) {
 
         // Step 2 - Generate a verification token with the user's ID
         const verificationToken = user.generateVerificationToken();
-        //console.log(verificationToken);
         // Step 3 - Email the user a unique verification link
         const url = `http://localhost:3000/user/verify/${verificationToken}/${login_method}`;
         console.log(url);
@@ -599,15 +593,20 @@ export async function deleteUser(req,res){
     const cache = await client.hGetAll(incoming_user[login_method]);
     const user = await User.findOne(incoming_user).exec();
     if (Object.keys(cache).length != 0) {
-        client.del(incoming_user[login_method]);
+        client.del(incoming_user[login_method]).then(function(){
+            console.log("Data deleted from redis"); // Success
+        })
+            .catch(function(error){
+                console.log(error); // Failure
+            });
     } 
     if(user){
-        User.remove(incoming_user, function(err) {
-            if (err) {
-                console.log(err);
-            }
-
-        });
+        User.deleteOne(incoming_user).then(function(){
+            console.log("Data deleted from mongo"); 
+        })
+            .catch(function(error){
+                console.log(error); 
+            });
     }
     return res.status(200).send({
         message: 'Deleted your account'
