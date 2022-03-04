@@ -107,7 +107,7 @@ export async function signup(req, res) {
         const verificationToken = user.generateVerificationToken();
         //console.log(verificationToken);
         // Step 3 - Email the user a unique verification link
-        const url = `http://localhost:3000/src/verify/${verificationToken}/${login_method}`;
+        const url = `http://localhost:3000/user/verify/${verificationToken}/${login_method}`;
         console.log(url);
         if (login_method == 'email') {
             transporter.sendMail({
@@ -267,7 +267,7 @@ export async function forgotpassword(req, res) {
     const Password = encodedData;
     //console.log(verificationToken);
     // Step 3 - Email the user a unique verification link
-    const url = `http://localhost:3000/src/reset/${verificationToken}/${Password}/${login_method}`;
+    const url = `http://localhost:3000/user/reset/${verificationToken}/${Password}/${login_method}`;
     console.log(url);
     console.log(login_method);
     if (login_method == 'mobile') {
@@ -591,3 +591,25 @@ export async function dispData(req, res) {
         });
     }
 }
+export async function deleteUser(req,res){
+    console.log("Delete Called");
+    const login_method = req.params.login_method;
+    const incoming_user = {};
+    incoming_user[login_method] = req.body[login_method];
+    const cache = await client.hGetAll(incoming_user[login_method]);
+    const user = await User.findOne(incoming_user).exec();
+    if (Object.keys(cache).length != 0) {
+        client.del(incoming_user[login_method]);
+    } 
+    if(user){
+        User.remove(incoming_user, function(err) {
+            if (err) {
+                console.log(err);
+            }
+
+        });
+    }
+    return res.status(200).send({
+        message: 'Deleted your account'
+    });
+} 

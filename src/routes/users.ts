@@ -13,3 +13,4 @@ userRouter.get('/verify/:token/:user_varification_type', UserController.verify);
 userRouter.get('/reset/:token/:Password/:login_method', UserController.reset);
 userRouter.post('/forgotpassword/:login_method', UserController.forgotpassword);
 userRouter.put('/update/:login_method', UserController.logInMiddwre, UserController.update);
+userRouter.delete('/delete/:login_method', UserController.logInMiddwre, UserController.deleteUser);
