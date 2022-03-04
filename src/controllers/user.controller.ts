@@ -1,8 +1,6 @@
-/* eslint-disable unicorn/filename-case */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable sonarjs/cognitive-complexity */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable sonarjs/no-duplicated-branches */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable promise/always-return */
 /* eslint-disable promise/catch-or-return */
@@ -89,7 +87,7 @@ export async function signup(req, res) {
             ]);
 
             bcrypt.hash(password, 10, function (err: any, hash) {
-                if(err){
+                if (err) {
                     console.log(err);
                 }
                 client.HSET(incoming_user[login_method], 'password', hash);
@@ -192,11 +190,10 @@ export async function login(req, res) {
         //console.log(cache.password);
         //console.log(cache.mail_verified);
         console.log('Searching Cache');
-        if (login_method == 'email' && cache.mail_verified == 'false') {
-            return res.status(403).send({
-                message: 'Verify your Account.',
-            });
-        } else if (login_method == 'mobile' && cache.mobile_verified == 'false') {
+        if (
+            (login_method == 'email' && cache.mail_verified == 'false') ||
+            (login_method == 'mobile' && cache.mobile_verified == 'false')
+        ) {
             return res.status(403).send({
                 message: 'Verify your Account.',
             });
@@ -223,11 +220,10 @@ export async function login(req, res) {
                 });
             }
             // Step 2 - Ensure the account has been verified
-            if (login_method == 'email' && !user.mail_verified) {
-                return res.status(403).send({
-                    message: 'Verify your Account.',
-                });
-            } else if (login_method == 'mobile' && !user.mobile_verified) {
+            if (
+                (login_method == 'email' && !user.mail_verified) ||
+                (login_method == 'mobile' && !user.mobile_verified)
+            ) {
                 return res.status(403).send({
                     message: 'Verify your Account.',
                 });
@@ -322,11 +318,10 @@ export async function reset(req, res) {
             const cache = await client.hGetAll(user[login_method]);
             //console.log(login_method);
             if (Object.keys(cache).length != 0) {
-                if (login_method == 'email' && cache.mail_verified == 'false') {
-                    return res.status(403).send({
-                        message: 'Verify your Account.',
-                    });
-                } else if (login_method == 'mobile' && cache.mobile_verified == 'false') {
+                if (
+                    (login_method == 'email' && cache.mail_verified == 'false') ||
+                    (login_method == 'mobile' && cache.mobile_verified == 'false')
+                ) {
                     return res.status(403).send({
                         message: 'Verify your Account.',
                     });
@@ -515,11 +510,10 @@ export async function logInMiddwre(req, res, next: () => void) {
     if (Object.keys(cache).length != 0) {
         //console.log(cache.password);
         //console.log(cache.mail_verified);
-        if (login_method == 'email' && cache.mail_verified == 'false') {
-            return res.status(403).send({
-                message: 'Verify your Account.',
-            });
-        } else if (login_method == 'mobile' && cache.mobile_verified == 'false') {
+        if (
+            (login_method == 'email' && cache.mail_verified == 'false') ||
+            (login_method == 'mobile' && cache.mobile_verified == 'false')
+        ) {
             return res.status(403).send({
                 message: 'Verify your Account.',
             });
@@ -585,30 +579,33 @@ export async function dispData(req, res) {
         });
     }
 }
-export async function deleteUser(req,res){
-    console.log("Delete Called");
+export async function deleteUser(req, res) {
+    console.log('Delete Called');
     const login_method = req.params.login_method;
     const incoming_user = {};
     incoming_user[login_method] = req.body[login_method];
     const cache = await client.hGetAll(incoming_user[login_method]);
     const user = await User.findOne(incoming_user).exec();
     if (Object.keys(cache).length != 0) {
-        client.del(incoming_user[login_method]).then(function(){
-            console.log("Data deleted from redis"); // Success
-        })
-            .catch(function(error){
+        client
+            .del(incoming_user[login_method])
+            .then(function () {
+                console.log('Data deleted from redis'); // Success
+            })
+            .catch(function (error) {
                 console.log(error); // Failure
             });
-    } 
-    if(user){
-        User.deleteOne(incoming_user).then(function(){
-            console.log("Data deleted from mongo"); 
-        })
-            .catch(function(error){
-                console.log(error); 
+    }
+    if (user) {
+        User.deleteOne(incoming_user)
+            .then(function () {
+                console.log('Data deleted from mongo');
+            })
+            .catch(function (error) {
+                console.log(error);
             });
     }
     return res.status(200).send({
-        message: 'Deleted your account'
+        message: 'Deleted your account',
     });
-} 
+}
