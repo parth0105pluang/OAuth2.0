@@ -1,6 +1,5 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-/* eslint-disable sonarjs/no-duplicate-string */
-//no-explicit-any 
+//no-duplicate-string
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -31,6 +30,11 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASSWORD,
     },
 });
+const ResponseMessages = {
+    verify:'Verify your Account.',
+    wrongPass:'Wrong Password',
+    noUser:'User does not exists'
+}
 export async function signup(req, res) {
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
@@ -192,7 +196,7 @@ export async function login(req, res) {
             (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
         ) {
             return res.status(403).send({
-                message: 'Verify your Account.',
+                message: ResponseMessages.verify,
             });
         }
         bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
@@ -203,7 +207,7 @@ export async function login(req, res) {
                 });
             } else {
                 return res.status(403).send({
-                    message: 'Wrong Password',
+                    message: ResponseMessages.wrongPass,
                 });
             }
         });
@@ -213,13 +217,13 @@ export async function login(req, res) {
             const user = await User.findOne(IncomingUser).exec();
             if (!user) {
                 return res.status(404).send({
-                    message: 'User does not exists',
+                    message: ResponseMessages.noUser,
                 });
             }
             // Step 2 - Ensure the account has been verified
             if ((LoginMethod == 'email' && !user.mail_verified) || (LoginMethod == 'mobile' && !user.mobile_verified)) {
                 return res.status(403).send({
-                    message: 'Verify your Account.',
+                    message: ResponseMessages.verify,
                 });
             }
             user.comparePassword(req.body.password, function (err, isMatch) {
@@ -231,7 +235,7 @@ export async function login(req, res) {
                     });
                 } else {
                     return res.status(403).send({
-                        message: 'Wrong Password',
+                        message: ResponseMessages.wrongPass,
                     });
                 }
             });
@@ -319,7 +323,7 @@ export async function reset(req, res) {
                     (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
                 ) {
                     return res.status(403).send({
-                        message: 'Verify your Account.',
+                        message: ResponseMessages.verify,
                     });
                 }
                 const decodedData = atob(req.params.Password);
@@ -356,13 +360,13 @@ export async function getotp(req, res) {
         const user = await User.findOne({ mobile }).exec();
         if (!user) {
             return res.status(404).send({
-                message: 'User does not exists',
+                message: ResponseMessages.noUser,
             });
         }
         // Step 2 - Ensure the account has been verified
         if (!user.mobile_verified) {
             return res.status(403).send({
-                message: 'Verify your Account.',
+                message: ResponseMessages.verify,
             });
         }
         const otp = otpGenerator.generate(8, {});
@@ -397,13 +401,13 @@ export async function loginotp(req, res) {
         const user = await User.findOne({ mobile }).exec();
         if (!user) {
             return res.status(404).send({
-                message: 'User does not exists',
+                message: ResponseMessages.noUser,
             });
         }
         // Step 2 - Ensure the account has been verified
         if (!user.mobile_verified) {
             return res.status(403).send({
-                message: 'Verify your Account.',
+                message: ResponseMessages.verify,
             });
         }
         if (user.otp != otp) {
@@ -514,7 +518,7 @@ export async function logInMiddwre(req, res, next: () => void) {
             (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
         ) {
             return res.status(403).send({
-                message: 'Verify your Account.',
+                message: ResponseMessages.verify,
             });
         }
         bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
@@ -522,7 +526,7 @@ export async function logInMiddwre(req, res, next: () => void) {
                 next();
             } else {
                 return res.status(403).send({
-                    message: 'Wrong Password',
+                    message: ResponseMessages.wrongPass,
                 });
             }
         });
@@ -531,18 +535,18 @@ export async function logInMiddwre(req, res, next: () => void) {
             const user = await User.findOne(IncomingUser).exec();
             if (!user) {
                 return res.status(404).send({
-                    message: 'User does not exists',
+                    message: ResponseMessages.noUser,
                 });
             }
             // Step 2 - Ensure the account has been verified
             if (LoginMethod == 'mobile' && !user.mobile_verified) {
                 return res.status(403).send({
-                    message: 'Verify your Account.',
+                    message: ResponseMessages.verify,
                 });
             }
             if (LoginMethod == 'email' && !user.mail_verified) {
                 return res.status(403).send({
-                    message: 'Verify your Account.',
+                    message: ResponseMessages.verify,
                 });
             }
             user.comparePassword(req.body.password, function (err, isMatch) {
@@ -552,7 +556,7 @@ export async function logInMiddwre(req, res, next: () => void) {
                     next();
                 } else {
                     return res.status(403).send({
-                        message: 'Wrong Password',
+                        message: ResponseMessages.wrongPass,
                     });
                 }
             });
