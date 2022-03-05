@@ -2,7 +2,6 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable promise/always-return */
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -115,9 +114,7 @@ export async function signup(req, res) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             fast2sms
                 .sendMessage(options)
-                .then((response: any) => {
-                    res.status(201).send(response);
-                })
+                .then((response: any) => res.status(201).send(response))
                 .catch(function (err) {
                     res.status(500).send(err);
                 });
@@ -264,13 +261,11 @@ export async function forgotpassword(req, res) {
             message: 'your reset link: ' + url,
             numbers: [IncomingUser[LoginMethod]],
         };
-        fast2sms.sendMessage(options).then((response: any) => {
-            response.toJson();
-            logger.info(response);
-        })
-            .catch((err)=>{
-                logger.info(err);
-            });
+        try {
+            fast2sms.sendMessage(options);    
+        } catch (error) {
+            logger.info(error);
+        }
         return res.status(201).send({
             message: `Sent a verification sms to ${LoginMethod}`,
         });
@@ -377,9 +372,7 @@ export async function getotp(req, res) {
             message: 'your otp: ' + otp,
             numbers: [mobile],
         };
-        fast2sms.sendMessage(options).then((response) => {
-            res.status(201).send(response);
-        })
+        fast2sms.sendMessage(options).then((response) => res.status(201).send(response))
             .catch((err)=>{
                 logger.info(err);
             });
@@ -596,6 +589,7 @@ export async function deleteUser(req, res) {
             .del(IncomingUser[LoginMethod])
             .then(function () {
                 logger.info('Data deleted from redis'); // Success
+                return "Success Data deleted from redis";
             })
             .catch(function (error) {
                 // eslint-disable-next-line no-console
@@ -603,14 +597,15 @@ export async function deleteUser(req, res) {
             });
     }
     if (user) {
-        User.deleteOne(IncomingUser)
-            .then(function () {
+        User.deleteOne(IncomingUser,(err)=>{
+            if(err){
+                logger.info(err);
+            }
+            else{
                 logger.info('Data deleted from mongo');
-            })
-            .catch(function (error) {
-                // eslint-disable-next-line no-console
-                logger.info(error);
-            });
+            }
+        });
+            
     }
     return res.status(200).send({
         message: 'Deleted your account',
