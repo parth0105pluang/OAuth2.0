@@ -1,7 +1,6 @@
 /* eslint-disable sonarjs/cognitive-complexity */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -14,6 +13,7 @@ import * as client from '../helpers/account.cache';
 import logger from '../helpers/logger';
 import User from '../models/user.model';
 global.Buffer = global.Buffer || Buffer;
+const USER_VERIFICATION_TOKEN_SECRET = process.env.USER_VERIFICATION_TOKEN_SECRET as string;
 if (typeof btoa === 'undefined') {
     global.btoa = function (str) {
         return new Buffer(str, 'binary').toString('base64');
@@ -137,8 +137,7 @@ export async function verify(req, res) {
     // Step 1 -  Verify the token from the URL
     let payload;
     try {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        payload = jwt.verify(token, process.env.USER_VERIFICATION_TOKEN_SECRET!);
+        payload = jwt.verify(token, USER_VERIFICATION_TOKEN_SECRET);
     } catch (err) {
         return res.status(500).send(err);
     }
@@ -262,7 +261,7 @@ export async function forgotpassword(req, res) {
             numbers: [IncomingUser[LoginMethod]],
         };
         try {
-            fast2sms.sendMessage(options);    
+            fast2sms.sendMessage(options);
         } catch (error) {
             logger.info(error);
         }
@@ -296,7 +295,7 @@ export async function reset(req, res) {
     // Step 1 -  Verify the token from the URL
     let payload;
     try {
-        payload = jwt.verify(token, process.env.USER_VERIFICATION_TOKEN_SECRET!);
+        payload = jwt.verify(token, USER_VERIFICATION_TOKEN_SECRET);
     } catch (err) {
         return res.status(500).send(err);
     }
@@ -372,8 +371,10 @@ export async function getotp(req, res) {
             message: 'your otp: ' + otp,
             numbers: [mobile],
         };
-        fast2sms.sendMessage(options).then((response) => res.status(201).send(response))
-            .catch((err)=>{
+        fast2sms
+            .sendMessage(options)
+            .then((response) => res.status(201).send(response))
+            .catch((err) => {
                 logger.info(err);
             });
         user.otp = otp;
@@ -589,7 +590,7 @@ export async function deleteUser(req, res) {
             .del(IncomingUser[LoginMethod])
             .then(function () {
                 logger.info('Data deleted from redis'); // Success
-                return "Success Data deleted from redis";
+                return 'Success Data deleted from redis';
             })
             .catch(function (error) {
                 // eslint-disable-next-line no-console
@@ -597,15 +598,13 @@ export async function deleteUser(req, res) {
             });
     }
     if (user) {
-        User.deleteOne(IncomingUser,(err)=>{
-            if(err){
+        User.deleteOne(IncomingUser, (err) => {
+            if (err) {
                 logger.info(err);
-            }
-            else{
+            } else {
                 logger.info('Data deleted from mongo');
             }
         });
-            
     }
     return res.status(200).send({
         message: 'Deleted your account',
