@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/cognitive-complexity */
 /* eslint-disable sonarjs/no-duplicate-string */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+//no-explicit-any 
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -81,7 +81,7 @@ export async function signup(req, res) {
                 'false',
             ]);
 
-            bcrypt.hash(password, 10, function (err: any, hash) {
+            bcrypt.hash(password, 10, function (err, hash) {
                 if (err) {
                     logger.info(err);
                 }
@@ -111,10 +111,10 @@ export async function signup(req, res) {
                 message: url,
                 numbers: [mobile],
             };
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            
             fast2sms
                 .sendMessage(options)
-                .then((response: any) => res.status(201).send(response))
+                .then((response) => res.status(201).send(response))
                 .catch(function (err) {
                     res.status(500).send(err);
                 });
@@ -195,7 +195,7 @@ export async function login(req, res) {
                 message: 'Verify your Account.',
             });
         }
-        bcrypt.compare(req.body.password, cache.password, function (err: any, result: boolean) {
+        bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
             logger.info(err);
             if (result) {
                 return res.status(200).send({
@@ -222,7 +222,7 @@ export async function login(req, res) {
                     message: 'Verify your Account.',
                 });
             }
-            user.comparePassword(req.body.password, function (err: any, isMatch: any) {
+            user.comparePassword(req.body.password, function (err, isMatch) {
                 if (err) throw err;
                 logger.info('Password Matched', isMatch);
                 if (isMatch) {
@@ -324,7 +324,7 @@ export async function reset(req, res) {
                 }
                 const decodedData = atob(req.params.Password);
                 logger.info('DecodedData: ' + decodedData);
-                bcrypt.hash(decodedData, 10, function (err: any, hash) {
+                bcrypt.hash(decodedData, 10, function (err, hash) {
                     client.HSET(user[LoginMethod], 'password', hash);
                 });
             }
@@ -517,7 +517,7 @@ export async function logInMiddwre(req, res, next: () => void) {
                 message: 'Verify your Account.',
             });
         }
-        bcrypt.compare(req.body.password, cache.password, function (err: any, result: boolean) {
+        bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
             if (result) {
                 next();
             } else {
@@ -545,7 +545,7 @@ export async function logInMiddwre(req, res, next: () => void) {
                     message: 'Verify your Account.',
                 });
             }
-            user.comparePassword(req.body.password, function (err: any, isMatch: any) {
+            user.comparePassword(req.body.password, function (err, isMatch) {
                 if (err) throw err;
                 logger.info('Password Matched', isMatch);
                 if (isMatch) {
@@ -593,7 +593,6 @@ export async function deleteUser(req, res) {
                 return 'Success Data deleted from redis';
             })
             .catch(function (error) {
-                // eslint-disable-next-line no-console
                 logger.info(error); // Failure
             });
     }
