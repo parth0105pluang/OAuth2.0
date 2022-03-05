@@ -1,10 +1,8 @@
-/* eslint-disable promise/catch-or-return */
 /* eslint-disable sonarjs/cognitive-complexity */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable promise/always-return */
-//promise/catch-or-return
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -269,7 +267,10 @@ export async function forgotpassword(req, res) {
         fast2sms.sendMessage(options).then((response: any) => {
             response.toJson();
             logger.info(response);
-        });
+        })
+            .catch((err)=>{
+                logger.info(err);
+            });
         return res.status(201).send({
             message: `Sent a verification sms to ${LoginMethod}`,
         });
@@ -378,7 +379,10 @@ export async function getotp(req, res) {
         };
         fast2sms.sendMessage(options).then((response) => {
             res.status(201).send(response);
-        });
+        })
+            .catch((err)=>{
+                logger.info(err);
+            });
         user.otp = otp;
         user.save();
     } catch (err) {
