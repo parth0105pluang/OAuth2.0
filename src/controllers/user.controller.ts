@@ -1,5 +1,4 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-//no-duplicate-string
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -179,18 +178,13 @@ export async function login(req, res) {
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
-    logger.info(IncomingUser[LoginMethod]);
     if (!IncomingUser[LoginMethod]) {
         return res.status(422).send({
             message: `Missing ${LoginMethod}`,
         });
     }
-
     const cache = await client.hGetAll(IncomingUser[LoginMethod]);
     if (Object.keys(cache).length != 0) {
-        logger.info(cache.password);
-        logger.info(cache.mail_verified);
-        logger.info('Searching Cache');
         if (
             (LoginMethod == 'email' && cache.mail_verified == 'false') ||
             (LoginMethod == 'mobile' && cache.mobile_verified == 'false')

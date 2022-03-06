@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/filename-case */
 /* eslint-disable @typescript-eslint/no-this-alias */
 import * as bcrypt from 'bcrypt';
 import * as mongoose from 'mongoose';
@@ -46,8 +45,7 @@ UserSchema.pre('save', function (next) {
 });
 UserSchema.methods.generateVerificationToken = function () {
     const user = this;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return jwt.sign({ ID: user._id }, env.USER_VERIFICATION_TOKEN_SECRET!, {
+    return jwt.sign({ ID: user._id }, env.USER_VERIFICATION_TOKEN_SECRET as string, {
         expiresIn: '7d',
     });
 };

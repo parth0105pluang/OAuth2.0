@@ -1,5 +1,3 @@
-/* eslint-disable promise/always-return */
-
 import { config } from 'dotenv';
 import * as express from 'express';
 const app = express();
@@ -11,17 +9,15 @@ import logger from './helpers/logger';
 import { userRouter } from './routes';
 const PORT = 3000;
 mongoose
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .connect(process.env.MONGO_ATLAS!, {})
+    .connect(process.env.MONGO_ATLAS as string, {})
     .then(() => {
         logger.info('Successfully connected to mongo.');
+        return "connected mongo"
     })
     .catch((err) => {
         logger.info('Error connecting to mongo.', err);
     });
 app.use(express.json()); // parse body
-// routes
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 app.use('/user', userRouter);
 //const redisClient = redis.createClient();
 app.listen(PORT, () => {
