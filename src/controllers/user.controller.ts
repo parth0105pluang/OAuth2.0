@@ -1,4 +1,4 @@
-/* eslint-disable sonarjs/cognitive-complexity */
+//sonarjs/cognitive-complexity 
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -175,69 +175,10 @@ export async function verify(req, res) {
     }
 }
 export async function login(req, res) {
-    const LoginMethod = req.params.LoginMethod;
-    const IncomingUser = {};
-    IncomingUser[LoginMethod] = req.body[LoginMethod];
-    if (!IncomingUser[LoginMethod]) {
-        return res.status(422).send({
-            message: `Missing ${LoginMethod}`,
-        });
-    }
-    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
-    if (Object.keys(cache).length != 0) {
-        if (
-            (LoginMethod == 'email' && cache.mail_verified == 'false') ||
-            (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
-        ) {
-            return res.status(403).send({
-                message: ResponseMessages.verify,
-            });
-        }
-        bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
-            logger.info(err);
-            if (result) {
-                return res.status(200).send({
-                    cache,
-                });
-            } else {
-                return res.status(403).send({
-                    message: ResponseMessages.wrongPass,
-                });
-            }
-        });
-    } else {
-        try {
-            // Step 1 - Verify a user with the email exists
-            const user = await User.findOne(IncomingUser).exec();
-            if (!user) {
-                return res.status(404).send({
-                    message: ResponseMessages.noUser,
-                });
-            }
-            // Step 2 - Ensure the account has been verified
-            if ((LoginMethod == 'email' && !user.mail_verified) || (LoginMethod == 'mobile' && !user.mobile_verified)) {
-                return res.status(403).send({
-                    message: ResponseMessages.verify,
-                });
-            }
-            user.comparePassword(req.body.password, function (err, isMatch) {
-                if (err) throw err;
-                logger.info('Password Matched', isMatch);
-                if (isMatch) {
-                    return res.status(200).send({
-                        message: 'User logged in',
-                    });
-                } else {
-                    return res.status(403).send({
-                        message: ResponseMessages.wrongPass,
-                    });
-                }
-            });
-        } catch (err) {
-            logger.info(err);
-            return res.status(500).send(err);
-        }
-    }
+
+    return res.status(200).send({
+        message:"logged in"
+    });
 }
 export async function forgotpassword(req, res) {
     const LoginMethod = req.params.LoginMethod;
@@ -430,57 +371,53 @@ export async function update(req, res) {
     const { firstname } = req.body;
     const { lastname } = req.body;
     const { mobile } = req.body;
+    if (req.body.firstname) {
+        user.firstname = firstname;
+    }
+    if (req.body.lastname) {
+        user.lastname = lastname;
+    }
+    if (req.body.newpassword) {
+        user.password = req.body.newpassword;
+    }
     if (LoginMethod == 'mobile') {
-        if (req.body.firstname) {
-            user.firstname = firstname;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'firstname', firstname);
-            }
-        }
-        if (req.body.lastname) {
-            user.lastname = lastname;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'lastname', lastname);
-            }
-        }
         if (req.body.email) {
             user.email = email;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'email', email);
-            }
         }
-        if (req.body.newpassword) {
-            user.password = req.body.newpassword;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'password', req.body.newpassword);
-            }
+        if (Object.keys(cache).length != 0) {
+            await client.sendCommand([
+                'hmset',
+                IncomingUser[LoginMethod],
+                'email',
+                email,
+                'firstname',
+                firstname,
+                'lastname',
+                lastname,
+                'password',
+                req.body.newpassword
+            ]);
         }
     }
     if (LoginMethod == 'email') {
-        if (req.body.firstname) {
-            user.firstname = firstname;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'firstname', firstname);
-            }
-        }
-        if (req.body.lastname) {
-            user.lastname = lastname;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'lastname', lastname);
-            }
-        }
         if (req.body.mobile) {
             user.mobile = mobile;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'mobile', mobile);
-            }
         }
-        if (req.body.newpassword) {
-            user.password = req.body.newpassword;
-            if (Object.keys(cache).length != 0) {
-                await client.HSET(IncomingUser[LoginMethod], 'password', req.body.newpassword);
-            }
+        if (Object.keys(cache).length != 0) {
+            await client.sendCommand([
+                'hmset',
+                IncomingUser[LoginMethod],
+                'mobile',
+                mobile,
+                'firstname',
+                firstname,
+                'lastname',
+                lastname,
+                'password',
+                req.body.newpassword
+            ]);
         }
+        
     }
     logger.info(user);
     user.save(function () {
@@ -490,7 +427,7 @@ export async function update(req, res) {
         message: 'Updated!!',
     });
 }
-export async function logInMiddwre(req, res, next: () => void) {
+export async function logInMiddwre(req, res, next: () => void){
     //const { mobile } = req.body;
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
@@ -501,22 +438,23 @@ export async function logInMiddwre(req, res, next: () => void) {
             message: `Missing ${LoginMethod}.`,
         });
     }
-
-    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
-
-    if (Object.keys(cache).length != 0) {
-        logger.info(cache.password);
-        logger.info(cache.mail_verified);
-        if (
-            (LoginMethod == 'email' && cache.mail_verified == 'false') ||
-            (LoginMethod == 'mobile' && cache.mobile_verified == 'false')
-        ) {
+    const user = await User.findOne(IncomingUser).exec();
+    if (!user) {
+        return res.status(404).send({
+            message: ResponseMessages.noUser,
+        });
+    }
+    try{
+        // Step 2 - Ensure the account has been verified
+        if ((LoginMethod == 'mobile' && !user.mobile_verified)||(LoginMethod == 'email' && !user.mail_verified)) {
             return res.status(403).send({
                 message: ResponseMessages.verify,
             });
         }
-        bcrypt.compare(req.body.password, cache.password, function (err, result: boolean) {
-            if (result) {
+        user.comparePassword(req.body.password, function (err, isMatch) {
+            if (err) throw err;
+            logger.info('Password Matched', isMatch);
+            if (isMatch) {
                 next();
             } else {
                 return res.status(403).send({
@@ -524,39 +462,8 @@ export async function logInMiddwre(req, res, next: () => void) {
                 });
             }
         });
-    } else {
-        try {
-            const user = await User.findOne(IncomingUser).exec();
-            if (!user) {
-                return res.status(404).send({
-                    message: ResponseMessages.noUser,
-                });
-            }
-            // Step 2 - Ensure the account has been verified
-            if (LoginMethod == 'mobile' && !user.mobile_verified) {
-                return res.status(403).send({
-                    message: ResponseMessages.verify,
-                });
-            }
-            if (LoginMethod == 'email' && !user.mail_verified) {
-                return res.status(403).send({
-                    message: ResponseMessages.verify,
-                });
-            }
-            user.comparePassword(req.body.password, function (err, isMatch) {
-                if (err) throw err;
-                logger.info('Password Matched', isMatch);
-                if (isMatch) {
-                    next();
-                } else {
-                    return res.status(403).send({
-                        message: ResponseMessages.wrongPass,
-                    });
-                }
-            });
-        } catch (err) {
-            return res.status(500).send(err);
-        }
+    } catch (err) {
+        return res.status(500).send(err);
     }
 }
 export async function dispData(req, res) {
