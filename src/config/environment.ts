@@ -9,18 +9,20 @@ const schema = Joi.object({
     EMAIL_PASSWORD: Joi.string().required(),
     USER_VERIFICATION_TOKEN_SECRET: Joi.string().required(),
 })
+let envi;
 try {
-    const value = schema.validateAsync({ MONGO_ATLAS: process.env.MONGO_ATLAS, USER_VERIFICATION_TOKEN_SECRET:process.env.USER_VERIFICATION_TOKEN_SECRET,EMAIL_USERNAME:process.env.EMAIL_USERNAME,EMAIL_PASSWORD: process.env.EMAIL_PASSWORD})
+    const value = schema.validate({ MONGO_ATLAS: process.env.MONGO_ATLAS, USER_VERIFICATION_TOKEN_SECRET:process.env.USER_VERIFICATION_TOKEN_SECRET,EMAIL_USERNAME:process.env.EMAIL_USERNAME,EMAIL_PASSWORD: process.env.EMAIL_PASSWORD})
+    envi=value;
     logger.info(value);
 }
 catch (err) { 
     logger.info(err);
 }
 
-const envi= {
+/*const envi= {
     MONGO_ATLAS: process.env.MONGO_ATLAS,
     EMAIL_USERNAME: process.env.EMAIL_USERNAME,
     EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
     USER_VERIFICATION_TOKEN_SECRET: process.env.USER_VERIFICATION_TOKEN_SECRET
-};
+};*/
 export default envi;
