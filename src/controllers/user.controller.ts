@@ -7,11 +7,12 @@ import * as mongoose from 'mongoose';
 import * as nodemailer from 'nodemailer';
 import * as otpGenerator from 'otp-generator';
 
+import envi from '../config';
 import * as client from '../helpers/account.cache';
 import logger from '../helpers/logger';
 import User from '../models/user.model';
 global.Buffer = global.Buffer || Buffer;
-const USER_VERIFICATION_TOKEN_SECRET = process.env.USER_VERIFICATION_TOKEN_SECRET as string;
+//const USER_VERIFICATION_TOKEN_SECRET = envi.USER_VERIFICATION_TOKEN_SECRET;
 if (typeof btoa === 'undefined') {
     global.btoa = function (str) {
         return new Buffer(str, 'binary').toString('base64');
@@ -25,8 +26,8 @@ if (typeof atob === 'undefined') {
 const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
+        user: envi.EMAIL_USERNAME,
+        pass: envi.EMAIL_PASSWORD,
     },
 });
 const ResponseMessages = {
@@ -140,7 +141,7 @@ export async function verify(req, res) {
     // Step 1 -  Verify the token from the URL
     let payload;
     try {
-        payload = jwt.verify(token, USER_VERIFICATION_TOKEN_SECRET);
+        payload = jwt.verify(token, envi.USER_VERIFICATION_TOKEN_SECRET as string);
     } catch (err) {
         return res.status(500).send(err);
     }
@@ -234,7 +235,7 @@ export async function reset(req, res) {
     // Step 1 -  Verify the token from the URL
     let payload;
     try {
-        payload = jwt.verify(token, USER_VERIFICATION_TOKEN_SECRET);
+        payload = jwt.verify(token, envi.USER_VERIFICATION_TOKEN_SECRET as string);
     } catch (err) {
         return res.status(500).send(err);
     }

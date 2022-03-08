@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import * as bcrypt from 'bcrypt';
 import * as mongoose from 'mongoose';
+
+import envi from '../config';
 const SALT_WORK_FACTOR = 10;
 import * as jwt from 'jsonwebtoken';
-import { env } from 'process';
 const UserSchema = new mongoose.Schema({
     _id: mongoose.Schema.Types.ObjectId,
     email: String,
@@ -45,7 +46,7 @@ UserSchema.pre('save', function (next) {
 });
 UserSchema.methods.generateVerificationToken = function () {
     const user = this;
-    return jwt.sign({ ID: user._id }, env.USER_VERIFICATION_TOKEN_SECRET as string, {
+    return jwt.sign({ ID: user._id }, envi.USER_VERIFICATION_TOKEN_SECRET as string, {
         expiresIn: '7d',
     });
 };

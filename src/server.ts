@@ -5,11 +5,13 @@ const app = express();
 import * as mongoose from 'mongoose';
 //set up mongoDB connection
 config();
+import  envi  from './config';
+
 import logger from './helpers/logger';
 import { userRouter } from './routes';
 const PORT = 3000;
 mongoose
-    .connect(process.env.MONGO_ATLAS as string, {})
+    .connect(envi.MONGO_ATLAS as string, {})
     .then(() => {
         logger.info('Successfully connected to mongo.');
         return "connected mongo"
