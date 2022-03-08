@@ -8,11 +8,11 @@ const schema = Joi.object({
         .required(),
     EMAIL_PASSWORD: Joi.string().required(),
     USER_VERIFICATION_TOKEN_SECRET: Joi.string().required(),
-})
+}).options({ stripUnknown: true,convert: true,abortEarly: false, });
 let envi;
 try {
     const value = schema.validate({ MONGO_ATLAS: process.env.MONGO_ATLAS, USER_VERIFICATION_TOKEN_SECRET:process.env.USER_VERIFICATION_TOKEN_SECRET,EMAIL_USERNAME:process.env.EMAIL_USERNAME,EMAIL_PASSWORD: process.env.EMAIL_PASSWORD})
-    envi=value;
+    envi=value.value;
     logger.info(value);
 }
 catch (err) { 
