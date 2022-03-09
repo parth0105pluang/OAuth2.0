@@ -1,6 +1,7 @@
 //sonarjs/cognitive-complexity 
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
+//import * as session from 'express-session';
 import * as fast2sms from 'fast-two-sms';
 import * as jwt from 'jsonwebtoken';
 import * as mongoose from 'mongoose';
@@ -434,7 +435,12 @@ export async function logInMiddwre(req, res, next: () => void){
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
     // Check we have an valid login method
-    if (!IncomingUser[LoginMethod]) {
+    //logger.info(req.session.LoginMethod==req.body[LoginMethod]);
+    if(req.session.LoginMethod==req.body[LoginMethod]){
+        logger.info("Logged using cokkie");
+        next();
+    }
+    else if (!IncomingUser[LoginMethod]) {
         return res.status(422).send({
             message: `Missing ${LoginMethod}.`,
         });
@@ -456,6 +462,7 @@ export async function logInMiddwre(req, res, next: () => void){
             if (err) throw err;
             logger.info('Password Matched', isMatch);
             if (isMatch) {
+                req.session.LoginMethod=IncomingUser[LoginMethod];
                 next();
             } else {
                 return res.status(403).send({

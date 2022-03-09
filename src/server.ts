@@ -1,6 +1,9 @@
 import { config } from 'dotenv';
 import * as express from 'express';
+import * as session from 'express-session';
+//import * as oauth2orize from "oauth2orize"
 const app = express();
+//const oauth = oauth2orize.createServer();
 //import redis from "redis";
 import * as mongoose from 'mongoose';
 //set up mongoDB connection
@@ -20,6 +23,10 @@ mongoose
         logger.info('Error connecting to mongo.', err);
     });
 app.use(express.json()); // parse body
+app.use(session({secret:'random-sec',
+    resave: true,
+    saveUninitialized: true
+}));
 app.use('/user', userRouter);
 //const redisClient = redis.createClient();
 app.listen(PORT, () => {
