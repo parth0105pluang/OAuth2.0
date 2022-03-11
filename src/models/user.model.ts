@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema({
     otp: {
         type: String,
     },
+    ExternalAppToken: {type: String}
 });
 UserSchema.pre('save', function (next) {
     const user = this;

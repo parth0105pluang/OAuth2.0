@@ -14,3 +14,6 @@ userRouter.get('/reset/:token/:Password/:LoginMethod', UserController.reset);
 userRouter.post('/forgotpassword/:LoginMethod', UserController.forgotpassword);
 userRouter.put('/update/:LoginMethod', UserController.logInMiddwre, UserController.update);
 userRouter.delete('/delete/:LoginMethod', UserController.logInMiddwre, UserController.deleteUser);
+userRouter.post('/register/app', UserController.registerApp);
+userRouter.get('/token/:appName/:LoginMethod', UserController.logInMiddwre,UserController.reqToken);
+userRouter.post('/validate/:AppKey/:token', UserController.ValidateAppKey,UserController.validateToken);
