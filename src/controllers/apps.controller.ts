@@ -99,11 +99,19 @@ export async function validateToken(req,res){
     const token = req.params.token;
     logger.info(token);
     const user = await User.findOne({ ExternalAppToken:token } ).exec();
-    const userData={
-        firstname:user.firstname,
-        lastname:user.lastname
+    logger.info(user);
+    if (!user) {
+        return res.status(404).send({
+            message: "No such user",
+        });
     }
-    res.status(200).send({
-        userData
-    })
+    else{
+        const userData={
+            firstname:user.firstname,
+            lastname:user.lastname
+        }
+        res.status(200).send({
+            userData
+        })
+    }
 }
