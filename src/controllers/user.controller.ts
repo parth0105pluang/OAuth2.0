@@ -1,7 +1,6 @@
 //sonarjs/cognitive-complexity 
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
-//import * as session from 'express-session';
 import * as fast2sms from 'fast-two-sms';
 import * as jwt from 'jsonwebtoken';
 import * as mongoose from 'mongoose';
@@ -67,30 +66,12 @@ export async function signup(req, res) {
         }).save();
         //Cache the data
         try {
-            await client.sendCommand([
-                'hmset',
-                IncomingUser[LoginMethod],
-                'id',
-                user._id,
-                'email',
-                email,
-                'firstname',
-                firstname,
-                'lastname',
-                lastname,
-                'mobile',
-                mobile,
-                'mail_verified',
-                'false',
-                'mobile_verified',
-                'false',
-            ]);
-
+            client.addUser(user,IncomingUser[LoginMethod])
             bcrypt.hash(password, 10, function (err, hash) {
                 if (err) {
                     logger.info(err);
                 }
-                client.HSET(IncomingUser[LoginMethod], 'password', hash);
+                client.addFeild(IncomingUser[LoginMethod], 'password', hash);
             });
         } catch (error) {
             logger.info(error);
@@ -117,12 +98,8 @@ export async function signup(req, res) {
                 numbers: [mobile],
             };
             
-            fast2sms
-                .sendMessage(options)
-                .then((response) => res.status(201).send(response))
-                .catch(function (err) {
-                    res.status(500).send(err);
-                });
+            const response =  await fast2sms.sendMessage(options)
+            res.status(201).send(response);
         }
     } catch (err) {
         logger.info(err);
@@ -149,7 +126,7 @@ export async function verify(req, res) {
     try {
         // Step 2 - Find user with matching ID
         const user = await User.findOne({ _id: payload.ID }).exec();
-        const cache = await client.hGetAll(user[UserVerificationType]);
+        const cache = await client.GetAll(user[UserVerificationType]);
         if (!user) {
             return res.status(404).send({
                 message: 'User does not  exists',
@@ -159,12 +136,12 @@ export async function verify(req, res) {
         if (UserVerificationType == 'mobile') {
             user.mobile_verified = true;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(user.mobile, 'mobile_verified', 'true');
+                await client.addFeild(user.mobile, 'mobile_verified', 'true');
             }
         } else if (UserVerificationType == 'email') {
             user.mail_verified = true;
             if (Object.keys(cache).length != 0) {
-                await client.HSET(user.email, 'mail_verified', 'true');
+                await client.addFeild(user.email, 'mail_verified', 'true');
             }
         }
         await user.save();
@@ -252,7 +229,7 @@ export async function reset(req, res) {
         logger.info(req.params.Password);
         try {
             //var decrypted = CryptoJS.AES.decrypt(req.params.Password, key).toString(CryptoJS.enc.Utf8);
-            const cache = await client.hGetAll(user[LoginMethod]);
+            const cache = await client.GetAll(user[LoginMethod]);
             logger.info(LoginMethod);
             if (Object.keys(cache).length != 0) {
                 if (
@@ -266,7 +243,7 @@ export async function reset(req, res) {
                 const decodedData = atob(req.params.Password);
                 logger.info('DecodedData: ' + decodedData);
                 bcrypt.hash(decodedData, 10, function (err, hash) {
-                    client.HSET(user[LoginMethod], 'password', hash);
+                    client.addFeild(user[LoginMethod], 'password', hash);
                 });
             }
             const decodedData = atob(req.params.Password);
@@ -368,7 +345,7 @@ export async function update(req, res) {
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
     const user = await User.findOne(IncomingUser).exec();
-    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
+    const cache = await client.GetAll(IncomingUser[LoginMethod]);
     const { email } = req.body;
     const { firstname } = req.body;
     const { lastname } = req.body;
@@ -387,18 +364,7 @@ export async function update(req, res) {
             user.email = email;
         }
         if (Object.keys(cache).length != 0) {
-            await client.sendCommand([
-                'hmset',
-                IncomingUser[LoginMethod],
-                'email',
-                email,
-                'firstname',
-                firstname,
-                'lastname',
-                lastname,
-                'password',
-                req.body.newpassword
-            ]);
+            client.addUser(user,IncomingUser[LoginMethod]);
         }
     }
     if (LoginMethod == 'email') {
@@ -406,18 +372,7 @@ export async function update(req, res) {
             user.mobile = mobile;
         }
         if (Object.keys(cache).length != 0) {
-            await client.sendCommand([
-                'hmset',
-                IncomingUser[LoginMethod],
-                'mobile',
-                mobile,
-                'firstname',
-                firstname,
-                'lastname',
-                lastname,
-                'password',
-                req.body.newpassword
-            ]);
+            client.addUser(user,IncomingUser[LoginMethod]);
         }
         
     }
@@ -478,7 +433,7 @@ export async function dispData(req, res) {
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
-    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
+    const cache = await client.GetAll(IncomingUser[LoginMethod]);
 
     if (Object.keys(cache).length != 0) {
         return res.status(200).send({
@@ -496,11 +451,11 @@ export async function deleteUser(req, res) {
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
-    const cache = await client.hGetAll(IncomingUser[LoginMethod]);
+    const cache = await client.GetAll(IncomingUser[LoginMethod]);
     const user = await User.findOne(IncomingUser).exec();
     if (Object.keys(cache).length != 0) {
         client
-            .del(IncomingUser[LoginMethod])
+            .delUser(IncomingUser[LoginMethod])
             .then(function () {
                 logger.info('Data deleted from redis'); // Success
                 return 'Success Data deleted from redis';
@@ -522,3 +477,4 @@ export async function deleteUser(req, res) {
         message: 'Deleted your account',
     });
 }
+

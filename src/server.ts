@@ -11,7 +11,7 @@ config();
 import  envi  from './config';
 
 import logger from './helpers/logger';
-import { userRouter } from './routes';
+import { appsRouter,userRouter  } from './routes';
 const PORT = 3000;
 mongoose
     .connect(envi.MONGO_ATLAS as string, {})
@@ -28,6 +28,7 @@ app.use(session({secret:'random-sec',
     saveUninitialized: true
 }));
 app.use('/user', userRouter);
+app.use('/app', appsRouter);
 //const redisClient = redis.createClient();
 app.listen(PORT, () => {
     logger.info('Listening on port: ' + PORT);
