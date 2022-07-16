@@ -1,4 +1,4 @@
-//sonarjs/cognitive-complexity 
+//sonarjs/cognitive-complexity
 import * as bcrypt from 'bcrypt';
 import { Buffer } from 'buffer';
 import * as fast2sms from 'fast-two-sms';
@@ -31,10 +31,10 @@ const transporter = nodemailer.createTransport({
     },
 });
 const ResponseMessages = {
-    verify:'Verify your Account.',
-    wrongPass:'Wrong Password',
-    noUser:'User does not exists'
-}
+    verify: 'Verify your Account.',
+    wrongPass: 'Wrong Password',
+    noUser: 'User does not exists',
+};
 export async function signup(req, res) {
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
@@ -66,7 +66,7 @@ export async function signup(req, res) {
         }).save();
         //Cache the data
         try {
-            client.addUser(user,IncomingUser[LoginMethod])
+            client.addUser(user, IncomingUser[LoginMethod]);
             bcrypt.hash(password, 10, function (err, hash) {
                 if (err) {
                     logger.info(err);
@@ -97,8 +97,8 @@ export async function signup(req, res) {
                 message: url,
                 numbers: [mobile],
             };
-            
-            const response =  await fast2sms.sendMessage(options)
+
+            const response = await fast2sms.sendMessage(options);
             res.status(201).send(response);
         }
     } catch (err) {
@@ -154,9 +154,8 @@ export async function verify(req, res) {
     }
 }
 export async function login(req, res) {
-
     return res.status(200).send({
-        message:"logged in"
+        message: 'logged in',
     });
 }
 export async function forgotpassword(req, res) {
@@ -364,7 +363,7 @@ export async function update(req, res) {
             user.email = email;
         }
         if (Object.keys(cache).length != 0) {
-            client.addUser(user,IncomingUser[LoginMethod]);
+            client.addUser(user, IncomingUser[LoginMethod]);
         }
     }
     if (LoginMethod == 'email') {
@@ -372,9 +371,8 @@ export async function update(req, res) {
             user.mobile = mobile;
         }
         if (Object.keys(cache).length != 0) {
-            client.addUser(user,IncomingUser[LoginMethod]);
+            client.addUser(user, IncomingUser[LoginMethod]);
         }
-        
     }
     logger.info(user);
     user.save(function () {
@@ -384,18 +382,17 @@ export async function update(req, res) {
         message: 'Updated!!',
     });
 }
-export async function logInMiddwre(req, res, next: () => void){
+export async function logInMiddwre(req, res, next: () => void) {
     //const { mobile } = req.body;
     const LoginMethod = req.params.LoginMethod;
     const IncomingUser = {};
     IncomingUser[LoginMethod] = req.body[LoginMethod];
     // Check we have an valid login method
     //logger.info(req.session.LoginMethod==req.body[LoginMethod]);
-    if(req.session.LoginMethod==req.body[LoginMethod]){
-        logger.info("Logged using cokkie");
+    if (req.session.LoginMethod == req.body[LoginMethod]) {
+        logger.info('Logged using cokkie');
         next();
-    }
-    else if (!IncomingUser[LoginMethod]) {
+    } else if (!IncomingUser[LoginMethod]) {
         return res.status(422).send({
             message: `Missing ${LoginMethod}.`,
         });
@@ -406,9 +403,9 @@ export async function logInMiddwre(req, res, next: () => void){
             message: ResponseMessages.noUser,
         });
     }
-    try{
+    try {
         // Step 2 - Ensure the account has been verified
-        if ((LoginMethod == 'mobile' && !user.mobile_verified)||(LoginMethod == 'email' && !user.mail_verified)) {
+        if ((LoginMethod == 'mobile' && !user.mobile_verified) || (LoginMethod == 'email' && !user.mail_verified)) {
             return res.status(403).send({
                 message: ResponseMessages.verify,
             });
@@ -417,7 +414,7 @@ export async function logInMiddwre(req, res, next: () => void){
             if (err) throw err;
             logger.info('Password Matched', isMatch);
             if (isMatch) {
-                req.session.LoginMethod=IncomingUser[LoginMethod];
+                req.session.LoginMethod = IncomingUser[LoginMethod];
                 next();
             } else {
                 return res.status(403).send({
@@ -477,4 +474,3 @@ export async function deleteUser(req, res) {
         message: 'Deleted your account',
     });
 }
-

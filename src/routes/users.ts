@@ -6,7 +6,7 @@ userRouter.post('/login/otp', UserController.loginotp);
 userRouter.get('/data/:LoginMethod', UserController.logInMiddwre, UserController.dispData);
 userRouter.post('/signup/:LoginMethod', UserController.signup);
 //router.post('/signup/mobile', UserController.signupMobile);
-userRouter.post('/login/:LoginMethod', UserController.logInMiddwre,UserController.login);
+userRouter.post('/login/:LoginMethod', UserController.logInMiddwre, UserController.login);
 //router.post('/login/mobile', UserController.loginMobile);
 userRouter.post('/getotp', UserController.getotp);
 userRouter.get('/verify/:token/:UserVerificationType', UserController.verify);

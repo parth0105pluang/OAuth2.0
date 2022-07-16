@@ -8,7 +8,7 @@ const AppSchema = new mongoose.Schema({
     _id: mongoose.Schema.Types.ObjectId,
     redirectLink: String,
     appName: String,
-    AppKey:String
+    AppKey: String,
 });
 AppSchema.pre('save', function (next) {
     const app = this;
